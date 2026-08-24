@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     const maze = document.getElementById('maze');
+    const mazeContainer = document.getElementById('maze-container');
+    const playerTrail = document.getElementById('player-trail');
+    const playerToken = document.getElementById('player-token');
     const rows = 30;
     const cols = 30;
     const startPosition = { row: 1, col: 1 };
@@ -38,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function generateMaze(row, col) {
         maze.rows[row].cells[col].classList.remove('wall');
         maze.rows[row].cells[col].classList.add('path');
-        const shuffledDirections = directions.sort(() => Math.random() - 0.5);
+        const shuffledDirections = [...directions].sort(() => Math.random() - 0.5);
 
         for (let direction of shuffledDirections) {
             const newRow = row + direction.row * 2;
@@ -72,21 +75,54 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Garante que paredes ligadas à moldura comecem perpendicularmente a ela.
     function orientBorderWalls() {
+        function isWall(row, col) {
+            return maze.rows[row].cells[col].classList.contains('wall');
+        }
+
+        function openCell(row, col) {
+            const cell = maze.rows[row].cells[col];
+            cell.classList.remove('wall');
+            cell.classList.add('path');
+        }
+
         function openIfInvalid(row, col, nextRow, nextCol) {
             const cell = maze.rows[row].cells[col];
             const nextCell = maze.rows[nextRow].cells[nextCol];
 
-            if (cell.classList.contains('wall') && !nextCell.classList.contains('wall')) {
-                cell.classList.remove('wall');
-                cell.classList.add('path');
+            if (cell.classList.contains('wall') && !nextCell.classList.contains('wall')) openCell(row, col);
+        }
+
+        function separateBorderEntries(entries, inwardOffset) {
+            for (let index = 0; index < entries.length - 1; index++) {
+                const current = entries[index];
+                const next = entries[index + 1];
+                if (!isWall(current.row, current.col) || !isWall(next.row, next.col)) continue;
+
+                const currentContinues = isWall(current.row + inwardOffset.row, current.col + inwardOffset.col);
+                const nextContinues = isWall(next.row + inwardOffset.row, next.col + inwardOffset.col);
+
+                // Mantém a entrada que realmente segue para dentro do campo.
+                if (currentContinues && !nextContinues) {
+                    openCell(next.row, next.col);
+                } else {
+                    openCell(current.row, current.col);
+                }
             }
         }
+
+        const topEntries = [];
+        const bottomEntries = [];
+        const leftEntries = [];
+        const rightEntries = [];
 
         for (let col = 1; col < cols - 1; col++) {
             // Parede superior: o segundo bloco deve estar abaixo dela.
             openIfInvalid(1, col, 2, col);
             // Parede inferior: o segundo bloco deve estar acima dela.
             openIfInvalid(rows - 2, col, rows - 3, col);
+
+            topEntries.push({ row: 1, col });
+            bottomEntries.push({ row: rows - 2, col });
         }
 
         for (let row = 1; row < rows - 1; row++) {
@@ -94,7 +130,16 @@ document.addEventListener('DOMContentLoaded', function () {
             openIfInvalid(row, 1, row, 2);
             // Parede direita: o segundo bloco deve estar à esquerda dela.
             openIfInvalid(row, cols - 2, row, cols - 3);
+
+            leftEntries.push({ row, col: 1 });
+            rightEntries.push({ row, col: cols - 2 });
         }
+
+        // Impede entradas vizinhas formando uma linha paralela à moldura.
+        separateBorderEntries(topEntries, { row: 1, col: 0 });
+        separateBorderEntries(bottomEntries, { row: -1, col: 0 });
+        separateBorderEntries(leftEntries, { row: 0, col: 1 });
+        separateBorderEntries(rightEntries, { row: 0, col: -1 });
     }
 
     // Função para aplicar estilo nas paredes (cantos arredondados e sem divisórias)
@@ -142,53 +187,210 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Evita que duas linhas paralelas formem uma parede dupla.
+    // Remove camadas paralelas sobrepostas, mantendo uma única espessura.
     function removeDoubleWalls() {
         const isWall = (row, col) => maze.rows[row].cells[col].classList.contains('wall');
+        const openCell = (row, col) => {
+            const cell = maze.rows[row].cells[col];
+            cell.classList.remove('wall');
+            cell.classList.add('path');
+        };
 
-        for (let row = 0; row < rows - 1; row++) {
-            for (let col = 0; col < cols - 1; col++) {
-                const isDoubleWall =
-                    isWall(row, col) &&
-                    isWall(row, col + 1) &&
-                    isWall(row + 1, col) &&
-                    isWall(row + 1, col + 1);
+        let changed = true;
+        while (changed) {
+            changed = false;
 
-                if (!isDoubleWall) continue;
+            // Procura duas linhas horizontais com um trecho de parede sobreposto.
+            for (let row = 0; row < rows - 1 && !changed; row++) {
+                let start = -1;
 
-                const options = [
-                    [row, col],
-                    [row, col + 1],
-                    [row + 1, col],
-                    [row + 1, col + 1]
-                ];
-                const [openRow, openCol] = options[Math.floor(Math.random() * options.length)];
-                const cell = maze.rows[openRow].cells[openCol];
+                for (let col = 0; col <= cols; col++) {
+                    const overlap =
+                        col < cols &&
+                        isWall(row, col) &&
+                        isWall(row + 1, col);
 
-                cell.classList.remove('wall');
-                cell.classList.add('path');
+                    if (overlap && start === -1) start = col;
+
+                    if ((!overlap || col === cols) && start !== -1) {
+                        if (col - start >= 2) {
+                            // Mantém a linha superior e abre a camada inferior inteira.
+                            for (let openCol = start; openCol < col; openCol++) {
+                                openCell(row + 1, openCol);
+                            }
+                            changed = true;
+                            break;
+                        }
+                        start = -1;
+                    }
+                }
+            }
+
+            if (changed) continue;
+
+            // Procura duas colunas verticais com um trecho de parede sobreposto.
+            for (let col = 0; col < cols - 1 && !changed; col++) {
+                let start = -1;
+
+                for (let row = 0; row <= rows; row++) {
+                    const overlap =
+                        row < rows &&
+                        isWall(row, col) &&
+                        isWall(row, col + 1);
+
+                    if (overlap && start === -1) start = row;
+
+                    if ((!overlap || row === rows) && start !== -1) {
+                        if (row - start >= 2) {
+                            // Mantém a coluna esquerda e abre a camada direita inteira.
+                            for (let openRow = start; openRow < row; openRow++) {
+                                openCell(openRow, col + 1);
+                            }
+                            changed = true;
+                            break;
+                        }
+                        start = -1;
+                    }
+                }
             }
         }
+    }
+
+    // Evita áreas caminháveis com largura dupla sem bloquear o caminho principal.
+    function removeDoublePaths() {
+        const isWalkable = (row, col) => {
+            const cell = maze.rows[row].cells[col];
+            return !cell.classList.contains('wall') && !cell.classList.contains('boundary');
+        };
+
+        function canReachGoal() {
+            const queue = [{ ...startPosition }];
+            const visited = new Set([`${startPosition.row},${startPosition.col}`]);
+
+            while (queue.length > 0) {
+                const current = queue.shift();
+                if (current.row === goalPosition.row && current.col === goalPosition.col) return true;
+
+                for (const direction of directions) {
+                    const row = current.row + direction.row;
+                    const col = current.col + direction.col;
+                    const key = `${row},${col}`;
+
+                    if (
+                        row >= 0 && row < rows &&
+                        col >= 0 && col < cols &&
+                        !visited.has(key) &&
+                        isWalkable(row, col)
+                    ) {
+                        visited.add(key);
+                        queue.push({ row, col });
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        let changed = true;
+        while (changed) {
+            changed = false;
+
+            for (let row = 0; row < rows - 1 && !changed; row++) {
+                for (let col = 0; col < cols - 1 && !changed; col++) {
+                    const isDoublePath =
+                        isWalkable(row, col) &&
+                        isWalkable(row, col + 1) &&
+                        isWalkable(row + 1, col) &&
+                        isWalkable(row + 1, col + 1);
+
+                    if (!isDoublePath) continue;
+
+                    const options = [
+                        [row, col],
+                        [row, col + 1],
+                        [row + 1, col],
+                        [row + 1, col + 1]
+                    ];
+
+                    for (const [closeRow, closeCol] of options) {
+                        const isStart = closeRow === startPosition.row && closeCol === startPosition.col;
+                        const isGoal = closeRow === goalPosition.row && closeCol === goalPosition.col;
+                        if (isStart || isGoal) continue;
+
+                        const cell = maze.rows[closeRow].cells[closeCol];
+                        cell.classList.remove('path');
+                        cell.classList.add('wall');
+
+                        if (canReachGoal()) {
+                            changed = true;
+                            break;
+                        }
+
+                        cell.classList.remove('wall');
+                        cell.classList.add('path');
+                    }
+                }
+            }
+        }
+    }
+
+    function updatePlayerToken() {
+        const cell = maze.rows[playerPosition.row].cells[playerPosition.col];
+        const cellRect = cell.getBoundingClientRect();
+        const containerRect = mazeContainer.getBoundingClientRect();
+
+        return {
+            x: cellRect.left - containerRect.left + cellRect.width / 2,
+            y: cellRect.top - containerRect.top + cellRect.height / 2
+        };
+    }
+
+    function createMoveParticles(point) {
+        const particleCount = 4 + Math.floor(Math.random() * 5);
+
+        for (let index = 0; index < particleCount; index++) {
+            const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            particle.setAttribute('cx', point.x);
+            particle.setAttribute('cy', point.y);
+            particle.setAttribute('r', 1.5 + Math.random() * 3);
+            particle.setAttribute('fill', 'var(--color-accent-red, #e53e3e)');
+            playerTrail.appendChild(particle);
+
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 8 + Math.random() * 18;
+            gsap.to(particle, {
+                x: Math.cos(angle) * distance,
+                y: Math.sin(angle) * distance,
+                opacity: 0,
+                duration: 0.35 + Math.random() * 0.25,
+                ease: 'power2.out',
+                onComplete: () => particle.remove()
+            });
+        }
+    }
+
+    function setInitialPlayerTokenPosition() {
+        const point = updatePlayerToken();
+
+        playerTrail.replaceChildren();
+        gsap.set(playerToken, { left: point.x, top: point.y });
     }
 
     // Função para mover o jogador com feedback visual
     function movePlayer(newRow, newCol) {
         const newCell = maze.rows[newRow]?.cells[newCol];
         if (newCell && !newCell.classList.contains('wall') && !newCell.classList.contains('boundary')) {
-            // Remove player da célula anterior
-            maze.rows[playerPosition.row].cells[playerPosition.col].classList.remove('player');
-
-            // Adiciona classe temporária para animation
-            newCell.classList.add('player', 'move-in');
-
-            // Remove a classe de animação após o próximo frame
-            setTimeout(() => {
-                newCell.classList.remove('move-in');
-            }, 300);
-
+            createMoveParticles(updatePlayerToken());
             playerPosition = { row: newRow, col: newCol };
+            const newPosition = updatePlayerToken();
             moves++;
             document.getElementById('moves').textContent = moves;
+            gsap.to(playerToken, {
+                left: newPosition.x,
+                top: newPosition.y,
+                duration: 0.15,
+                ease: 'power2.out'
+            });
 
             // Verificar se atingiu o objetivo
             if (newCell.classList.contains('goal')) {
@@ -329,21 +531,24 @@ document.addEventListener('DOMContentLoaded', function () {
         // Remover as paredes ao redor da célula de chegada
         ensureGoalAccess();
 
+        // Fazer as paredes conectadas à moldura começarem para dentro.
+        orientBorderWalls();
+
         // Remover paredes duplas antes de calcular os cantos.
         removeDoubleWalls();
 
-        // Fazer as paredes conectadas à moldura começarem para dentro.
-        orientBorderWalls();
+        // Remover corredores com largura dupla sem perder a solução.
+        removeDoublePaths();
 
         // Aplicar estilo nas paredes (cantos arredondados e sem divisórias)
         styleWalls();
 
         // Definir o jogador na posição inicial e o objetivo
-        maze.rows[startPosition.row].cells[startPosition.col].classList.add('player');
         maze.rows[goalPosition.row].cells[goalPosition.col].classList.remove('wall');
         maze.rows[goalPosition.row].cells[goalPosition.col].classList.add('path', 'goal');
 
         playerPosition = { ...startPosition };
+        setInitialPlayerTokenPosition();
         startTimer();
     }
 
