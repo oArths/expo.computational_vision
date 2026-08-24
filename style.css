@@ -1,106 +1,509 @@
+/* Putt Party Visual Style System */
+/* Based on: Putt Party — Visual Style Guide by Shil Studio */
+
+:root {
+  /* ========== Design Tokens ========== */
+  /* Spacing scale (8px base) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  /* Border radius scale */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Font sizes */
+  --font-sm: 12px;
+  --font-md: 14px;
+  --font-lg: 16px;
+  --font-xl: 24px;
+  --font-xxl: 32px;
+
+  /* Tamanho único para células e moldura do labirinto */
+  --maze-cell-size: 30px;
+
+  /* ========== Color Palette (Vibrant Mini-Golf) ========== */
+  /* Primary colors - vibrant and playful */
+  --color-primary-green: #68d391;     /* Grama - Vivo */
+  --color-primary-green-light: #a8e6cf; /* Grama - Claro */
+  --color-primary-blue: #4facfe;      /* Água - Vibrante */
+  --color-primary-blue-light: #e9f5ff; /* Água - Claro */
+  --color-primary-yellow: #f6e05e;    /* Areia - Vivo */
+  --color-primary-yellow-light: #fff4b5; /* Areia - Claro */
+  --color-primary-purple: #a855f7;    /* Acento */
+  --color-primary-pink: #ec4899;      /* Acento */
+
+  /* UI & Neutral colors */
+  --color-ui-bg: #f8f9fa;              /* Fundo UI - claro */
+  --color-ui-fg: #2d3436;              /* Texto UI - escuro */
+  --color-ui-muted: #636e72;           /* Texto-muted */
+  --color-surface: #e9ecef;            /* Superfície */
+
+  /* Object colors - per category */
+  --color-grass: #68d391;
+  --color-wood: #d69e62;
+  --color-stone: #8d99ae;
+  --color-water: #4facfe;
+  --color-sand: #f6e05e;
+  --color-obstacle-1: #f56565;
+  --color-obstacle-2: #48bb78;
+  --color-obstacle-3: #4299e1;
+  --color-obstacle-4: #9f61e0;
+
+  /* Highlights & accents */
+  --color-highlight: #f6e05e;          /* Destaques - amarelo */
+  --color-accent-orange: #ed8936;      /* Laranja */
+  --color-accent-red: #e53e3e;         /* Perigo */
+  --color-success: #68d391;            /* Feedback positivo */
+  --color-info: #4299e1;               /* Informação */
+
+  /* Shadows & lighting */
+  --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-highlight: 0 1px 3px rgba(255, 255, 255, 0.4);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== Base Styles ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Nunito', 'Inter', sans-serif;
+  background: var(--color-ui-bg);
+  color: var(--color-ui-fg);
+  line-height: 1.6;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: var(--space-xl);
 }
 
-h1 {
-    text-align: center;
-}
-
+/* ========== Maze & Grid ========== */
 #maze-container {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  border: none;
+  border-radius: 14px;
+  background: var(--color-primary-green-light);
+  padding: 0;
+  overflow: hidden;
+}
+
+/* A moldura ocupa o espaço da antiga parede externa sem criar uma segunda parede. */
+#maze-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: var(--maze-cell-size) solid var(--color-grass);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
 }
 
 table {
-    border-collapse: collapse;
+  position: relative;
+  z-index: 1;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
 td {
-    width: 30px;
-    height: 30px;
-    border: 1px solid black;
-    text-align: center;
-    vertical-align: middle;
-    transition: background-color 0.3s ease;
+  width: var(--maze-cell-size);
+  height: var(--maze-cell-size);
+  font-family: 'Nunito', sans-serif;
+  font-size: var(--font-sm);
+  text-align: center;
+  vertical-align: middle;
+  transition: all 0.2s ease;
+  border: none;
 }
 
-.wall {
-    background-color: black;
+/* Cell types */
+td.wall {
+  background: var(--color-primary-green);
+  color: white;
 }
 
-.player {
-    background-color: blue;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+td.boundary {
+  background: transparent;
+  pointer-events: none;
 }
 
-.goal {
-    background-color: green;
+td.path {
+  background: var(--color-primary-green-light);
+  color: var(--color-ui-fg);
+}
+
+td.player {
+  background: var(--color-primary-yellow);
+  color: var(--color-ui-fg);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-full);
+  animation: pulse-player 2s ease-in-out infinite;
+}
+
+td.goal {
+  background: var(--color-primary-pink);
+  color: white;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-full);
+  position: relative;
+}
+
+td.goal::after {
+  content: '⭕';
+  position: absolute;
+  inset: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-ui-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6em;
+}
+
+td.obstacle {
+  background: var(--color-obstacle-1);
+  color: white;
+  font-weight: 700;
+}
+
+td.obstacle.two {
+  background: var(--color-obstacle-2);
+}
+
+td.obstacle.three {
+  background: var(--color-obstacle-3);
+}
+
+td.obstacle.four {
+  background: var(--color-obstacle-4);
+}
+
+td.sand {
+  background: var(--color-primary-yellow);
+  color: var(--color-ui-fg);
+}
+
+td.water {
+  background: var(--color-primary-blue);
+  color: white;
+}
+
+/* ========== Cantos arredondados em paredes ========== */
+td.wall.corner-tl { border-top-left-radius: 10px; }
+td.wall.corner-tr { border-top-right-radius: 10px; }
+td.wall.corner-bl { border-bottom-left-radius: 10px; }
+td.wall.corner-br { border-bottom-right-radius: 10px; }
+
+/* ========== UI Controls ========== */
+.section-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
 }
 
 .controls {
-    display: flex;
-    flex-direction: column;
-    margin-top: 20px;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .controls button {
-    width: 50px;
-    height: 50px;
-    margin: 5px;
-    font-size: 20px;
-    background-color: #ccc;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+  width: 56px;
+  height: 56px;
+  font-size: var(--font-xl);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  background: var(--color-primary-purple);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.controls button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.controls button:hover::before {
+  opacity: 1;
 }
 
 .controls button:hover {
-    background-color: #aaa;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow-medium);
+  background: var(--color-accent-orange);
 }
 
-.info {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-    max-width: 300px;
-    margin-bottom: 20px;
+.controls button:active {
+  transform: translateY(2px) scale(0.95);
+  box-shadow: var(--shadow-inset);
+  background: darken(var(--color-accent-orange), 10%);
 }
 
+.controls button:focus-visible {
+  outline: 2px solid var(--color-primary-yellow);
+  outline-offset: 4px;
+}
+
+.controls button:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: calc(var(--radius-full) + 4px);
+  background: var(--color-primary-yellow);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.controls button:hover:not(:active) {
+  box-shadow: var(--shadow-medium);
+}
+
+/* Restart button */
 .restart-container {
-    margin-top: 20px;
+  margin-top: var(--space-lg);
 }
 
 .restart-container button {
-    width: 120px;
-    height: 50px;
-    font-size: 18px;
-    background-color: #f44336;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+  width: 140px;
+  height: 52px;
+  font-size: var(--font-md);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  background: var(--color-accent-red);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.restart-container button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.restart-container button:hover::before {
+  left: 100%;
 }
 
 .restart-container button:hover {
-    background-color: #d32f2f;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-medium);
+  background: darken(var(--color-accent-red), 15%);
+}
+
+.restart-container button:active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: var(--shadow-inset);
+}
+
+.restart-container button:focus-visible {
+  outline: 2px solid var(--color-highlight);
+  outline-offset: 4px;
+}
+
+/* Info panel */
+.info {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  min-width: 200px;
+}
+
+.info p {
+  font-size: var(--font-md);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.info p span {
+  font-weight: 300;
+  font-size: var(--font-lg);
+  color: var(--color-primary-green);
+}
+
+/* ========== Game States ========== */
+#moves {
+  color: var(--color-ui-fg);
+  transition: color 0.3s ease;
+}
+
+#time {
+  color: var(--color-primary-blue);
+}
+
+/* ========== Celebration / Win ========== */
+#celebration {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at 30% 20%, var(--color-primary-blue-light) 0%, var(--color-ui-bg) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#celebration.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+#celebration h2 {
+  font-size: var(--font-xxl);
+  font-weight: 800;
+  color: var(--color-accent-red);
+  margin-bottom: var(--space-lg);
+  animation: bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#celebration p {
+  font-size: var(--font-lg);
+  color: var(--color-ui-fg);
+  margin-bottom: var(--space-2xl);
+}
+
+#celebration .restart-container button {
+  position: relative;
+  margin-top: var(--space-md);
+}
+
+/* ========== Animations ========== */
+@keyframes pulse-player {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes bounce-in {
+  0% { opacity: 0; transform: scale(0.3) translateY(20px); }
+  50% { opacity: 0.8; transform: scale(1.05) translateY(-10px); }
+  70% { transform: scale(0.9) translateY(5px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes celebration-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes particle-explode {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.5);
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  #celebration h2 {
+    animation: none;
+  }
+
+  #celebration p {
+    animation: none;
+  }
 }
 
 @media (max-width: 600px) {
-    td {
-        width: 20px;
-        height: 20px;
-    }
-    .controls button {
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
-    }
+  :root {
+    --maze-cell-size: 20px;
+  }
+
+  td {
+    font-size: 10px;
+  }
+
+}
+
+/* ========== Accessibility ========== */
+[role="alert"] {
+  background: var(--color-accent-red);
+  color: white;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  margin: var(--space-sm) 0;
+  font-weight: 600;
+}
+
+/* ========== Theme Variations (Optional) ========== */
+[data-theme="dark"] {
+  --color-ui-bg: #2d3436;
+  --color-ui-fg: #f8f9fa;
+  --color-surface: #4a5568;
+}
+
+/* Reduced contrast mode */
+@media (forced-colors: active) {
+  .controls button {
+    forced-color-adjust: none;
+  }
+  td {
+    forced-color-adjust: none;
+  }
 }
