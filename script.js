@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
+
     const maze = document.getElementById('maze');
     const mazeContainer = document.getElementById('maze-container');
     const playerTrail = document.getElementById('player-trail');
@@ -51,6 +52,102 @@ document.addEventListener('DOMContentLoaded', function () {
                 maze.rows[row + direction.row].cells[col + direction.col].classList.remove('wall');
                 maze.rows[row + direction.row].cells[col + direction.col].classList.add('path');
                 generateMaze(newRow, newCol);
+            }
+        }
+    }
+    function removeDeadEnds() {
+        const isWalkable = (row, col) => {
+            if (row < 0 || row >= rows || col < 0 || col >= cols) {
+                return false;
+            }
+
+            const cell = maze.rows[row].cells[col];
+
+            return (
+                !cell.classList.contains('wall') &&
+                !cell.classList.contains('boundary')
+            );
+        };
+
+        const getNeighbors = (row, col) => {
+            return directions
+                .map(direction => ({
+                    row: row + direction.row,
+                    col: col + direction.col
+                }))
+                .filter(position => isWalkable(position.row, position.col));
+        };
+
+        let changed = true;
+
+        while (changed) {
+            changed = false;
+
+            for (let row = 1; row < rows - 1; row++) {
+                for (let col = 1; col < cols - 1; col++) {
+
+                    const isStart =
+                        row === startPosition.row &&
+                        col === startPosition.col;
+
+                    const isGoal =
+                        row === goalPosition.row &&
+                        col === goalPosition.col;
+
+                    if (isStart || isGoal) {
+                        continue;
+                    }
+
+                    if (!isWalkable(row, col)) {
+                        continue;
+                    }
+
+                    const neighbors = getNeighbors(row, col);
+
+                    // Célula com apenas uma saída = beco
+                    if (neighbors.length > 1) {
+                        continue;
+                    }
+
+                    // Procura paredes vizinhas que possam ser abertas
+                    const possibleWalls = directions
+                        .map(direction => ({
+                            row: row + direction.row,
+                            col: col + direction.col
+                        }))
+                        .filter(position => {
+                            if (
+                                position.row <= 0 ||
+                                position.row >= rows - 1 ||
+                                position.col <= 0 ||
+                                position.col >= cols - 1
+                            ) {
+                                return false;
+                            }
+
+                            return !isWalkable(
+                                position.row,
+                                position.col
+                            );
+                        });
+
+                    if (possibleWalls.length === 0) {
+                        continue;
+                    }
+
+                    // Escolhe uma parede aleatória para abrir
+                    const wall =
+                        possibleWalls[
+                        Math.floor(Math.random() * possibleWalls.length)
+                        ];
+
+                    const cell = maze.rows[wall.row].cells[wall.col];
+
+                    cell.classList.remove('wall');
+                    cell.classList.add('path');
+
+                    changed = true;
+                }
             }
         }
     }
@@ -377,14 +474,60 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Função para mover o jogador com feedback visual
-    function movePlayer(newRow, newCol) {
-        const newCell = maze.rows[newRow]?.cells[newCol];
-        if (newCell && !newCell.classList.contains('wall') && !newCell.classList.contains('boundary')) {
+    function movePlayer(direction) {
+        let newRow = playerPosition.row;
+        let newCol = playerPosition.col;
+
+        let rowStep = 0;
+        let colStep = 0;
+
+        switch (direction) {
+            case 'TOP':
+                rowStep = -1;
+                break;
+
+            case 'BOTTOM':
+                rowStep = 1;
+                break;
+
+            case 'LEFT':
+                colStep = -1;
+                break;
+
+            case 'RIGHT':
+                colStep = 1;
+                break;
+
+            default:
+                return;
+        }
+
+        while (true) {
+            newRow += rowStep;
+            newCol += colStep;
+
+            const newCell = maze.rows[newRow]?.cells[newCol];
+
+            if (
+                !newCell ||
+                newCell.classList.contains('wall') ||
+                newCell.classList.contains('boundary')
+            ) {
+                break;
+            }
+
             createMoveParticles(updatePlayerToken());
-            playerPosition = { row: newRow, col: newCol };
+
+            playerPosition = {
+                row: newRow,
+                col: newCol
+            };
+
             const newPosition = updatePlayerToken();
+
             moves++;
             document.getElementById('moves').textContent = moves;
+
             gsap.to(playerToken, {
                 left: newPosition.x,
                 top: newPosition.y,
@@ -392,10 +535,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 ease: 'power2.out'
             });
 
-            // Verificar se atingiu o objetivo
             if (newCell.classList.contains('goal')) {
                 clearInterval(timerInterval);
                 showCelebration();
+                break;
             }
         }
     }
@@ -495,11 +638,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Controle por toque
-    document.getElementById('up').addEventListener('click', () => movePlayer(playerPosition.row - 1, playerPosition.col));
-    document.getElementById('down').addEventListener('click', () => movePlayer(playerPosition.row + 1, playerPosition.col));
-    document.getElementById('left').addEventListener('click', () => movePlayer(playerPosition.row, playerPosition.col - 1));
-    document.getElementById('right').addEventListener('click', () => movePlayer(playerPosition.row, playerPosition.col + 1));
 
     // Função para iniciar o cronômetro
     function startTimer() {
@@ -540,6 +678,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // Remover corredores com largura dupla sem perder a solução.
         removeDoublePaths();
 
+        removeDeadEnds();
+
         // Aplicar estilo nas paredes (cantos arredondados e sem divisórias)
         styleWalls();
 
@@ -557,4 +697,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Ação para o botão de reinício
     document.getElementById('restart').addEventListener('click', resetGame);
+    setInterval(async () => {
+        const resposta = await fetch("http://localhost:5000/movimento")
+        const dados = await resposta.json()
+
+
+        switch (dados.movimento) {
+            case 'TOP':
+                movePlayer('TOP');
+                break;
+
+            case 'BOTTOM':
+                movePlayer('BOTTOM');
+                break;
+
+            case 'LEFT':
+                movePlayer('LEFT');
+                break;
+
+            case 'RIGHT':
+                movePlayer('RIGHT');
+                break;
+        }
+
+        console.log(dados)
+    }, 50)
 });
