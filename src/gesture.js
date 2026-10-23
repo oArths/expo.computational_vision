@@ -14,6 +14,7 @@ const HISTORICO_MS = 200
 const PINCA_MAXIMA_MS = 2500
 const PERDA_MAO_MS = 250
 const TROCA_MAO = 0.25
+const ZONA_MORTA = 0.12
 
 const PAUSA_PUNHOS = 0.8
 const PAUSA_ESPERA_MS = 1000
@@ -39,8 +40,9 @@ export function maoPrincipal(hands) {
   return melhor
 }
 
-export function criarGesto() {
+export function criarGesto(modo = 'arrasto') {
   return {
+    modo,
     pinching: false,
     inicio: null,
     inicioEm: 0,
@@ -56,6 +58,16 @@ function direcaoDoDelta(dx, dy) {
   // A tela é espelhada, então mover a mão para a direita diminui o x da imagem.
   if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'RIGHT' : 'LEFT'
   return dy < 0 ? 'TOP' : 'BOTTOM'
+}
+
+// Modo quadrantes: a direção é o lado da câmera onde a pinça foi feita.
+export function quadranteDoPonto(ponto, aspecto = 1) {
+  const dx = ponto.x - 0.5
+  const dy = (ponto.y - 0.5) / aspecto
+
+  if (Math.abs(dx) < ZONA_MORTA && Math.abs(dy) < ZONA_MORTA) return null
+
+  return direcaoDoDelta(dx, dy)
 }
 
 // Dispara assim que a mão pinçada se desloca, sem esperar a soltura.
@@ -106,6 +118,19 @@ export function atualizarGesto(estado, hand, agora, aspecto = 1) {
     )
 
     estado.inicio = formando ? { x: formando.x, y: formando.y } : ponto
+
+    // No modo quadrantes a direção vem da posição da pinça, não do arrasto.
+    if (estado.modo === 'quadrantes') {
+      if (agora < estado.cooldownAte) return null
+
+      const direcao = quadranteDoPonto(ponto, aspecto)
+      if (!direcao) return null
+
+      estado.consumido = true
+      estado.cooldownAte = agora + COOLDOWN_MS
+      return direcao
+    }
+
     return null
   }
 
@@ -114,6 +139,8 @@ export function atualizarGesto(estado, hand, agora, aspecto = 1) {
     estado.inicio = null
     return null
   }
+
+  if (estado.modo === 'quadrantes') return null
 
   if (estado.consumido || agora < estado.cooldownAte) return null
 

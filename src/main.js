@@ -6,7 +6,8 @@ import {
   atualizarPausa,
   criarGesto,
   criarPausa,
-  maoPrincipal
+  maoPrincipal,
+  quadranteDoPonto
 } from './gesture.js'
 import { abrirCamera, criarDetector, iniciarLoop } from './hands.js'
 import { desenharOverlay, redimensionarOverlay } from './overlay.js'
@@ -40,7 +41,15 @@ const telas = {
   jogo: $('screen-game')
 }
 
-const gesto = criarGesto()
+const gesto = criarGesto(
+  new URLSearchParams(location.search).get('gesto') === 'quadrantes'
+    ? 'quadrantes'
+    : 'arrasto'
+)
+
+if (gesto.modo === 'quadrantes') document.body.classList.add('gesto-quadrantes')
+
+const zonasCamera = [...document.querySelectorAll('.camera-zonas span')]
 const pausa = criarPausa()
 
 let ultimoRastreado = 0
@@ -120,7 +129,7 @@ function iniciarDesafio() {
   esconderModal(startModal)
   reinicioAutomatico = null
   rodando = true
-  Object.assign(gesto, criarGesto())
+  Object.assign(gesto, criarGesto(gesto.modo))
   pausa.desde = null
   pausa.armada = true
 
@@ -234,6 +243,18 @@ async function iniciarRastreamento() {
           pinching: gesto.pinching,
           inicio: gesto.inicio
         })
+
+        const zonaAtiva =
+          gesto.modo === 'quadrantes' && primaria >= 0
+            ? quadranteDoPonto(
+                hands[primaria][8],
+                video.videoWidth / video.videoHeight || 1
+              )
+            : null
+
+        for (const zona of zonasCamera) {
+          zona.classList.toggle('ativa', zona.dataset.dir === zonaAtiva)
+        }
 
         if (rodando) {
           const direcao = atualizarGesto(

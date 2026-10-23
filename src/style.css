@@ -652,6 +652,62 @@ td.wall.corner-br { border-bottom-right-radius: 10px; }
   min-height: 20px;
 }
 
+/* Modo quadrantes: mostra onde pinçar sem cobrir o vídeo. */
+.camera-zonas {
+  position: absolute;
+  inset: 0;
+  display: none;
+  pointer-events: none;
+}
+
+body.gesto-quadrantes .camera-zonas {
+  display: block;
+}
+
+.camera-zonas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, transparent 49.7%, rgba(255, 255, 255, 0.55) 50%, transparent 50.3%),
+    linear-gradient(to bottom, transparent 49.7%, rgba(255, 255, 255, 0.55) 50%, transparent 50.3%);
+}
+
+/* Área morta do centro: pinça aqui não move. */
+.camera-zonas::after {
+  content: '';
+  position: absolute;
+  inset: 38%;
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+}
+
+.camera-zonas span {
+  position: absolute;
+  background: transparent;
+  transition: background 0.12s ease;
+}
+
+.camera-zonas span.ativa {
+  background: rgba(79, 172, 254, 0.32);
+}
+
+.camera-zonas [data-dir='LEFT'] {
+  inset: 0 50% 0 0;
+}
+
+.camera-zonas [data-dir='RIGHT'] {
+  inset: 0 0 0 50%;
+}
+
+.camera-zonas [data-dir='TOP'] {
+  inset: 0 0 50% 0;
+}
+
+.camera-zonas [data-dir='BOTTOM'] {
+  inset: 50% 0 0 0;
+}
+
 .game-hud {
   display: flex;
   align-items: center;

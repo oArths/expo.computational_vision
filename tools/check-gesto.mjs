@@ -14,8 +14,8 @@ function mao({ x = 0.5, y = 0.5, pinca = 0.6, escala = 0.1 }) {
   return hand
 }
 
-function sessao() {
-  const estado = criarGesto()
+function sessao(modo = 'arrasto') {
+  const estado = criarGesto(modo)
   let relogio = 0
   return {
     estado,
@@ -93,6 +93,32 @@ function sessao() {
   s.semMao()
   assert.equal(s.estado.pinching, false)
   assert.equal(s.frame({ x: 0.9, y: 0.9 }, 0.2), null)
+}
+
+// 6. Modo quadrantes: a direção é o lado da câmera onde a pinça acontece.
+{
+  const s = sessao('quadrantes')
+  assert.equal(s.frame({ x: 0.2, y: 0.5 }, 0.2), 'RIGHT')
+  s.frame({ x: 0.2, y: 0.5 }, 0.6)
+  s.pular(350)
+  assert.equal(s.frame({ x: 0.8, y: 0.5 }, 0.2), 'LEFT')
+  s.frame({ x: 0.8, y: 0.5 }, 0.6)
+  s.pular(350)
+  assert.equal(s.frame({ x: 0.5, y: 0.1 }, 0.2), 'TOP')
+  s.frame({ x: 0.5, y: 0.1 }, 0.6)
+  s.pular(350)
+  assert.equal(s.frame({ x: 0.5, y: 0.9 }, 0.2), 'BOTTOM')
+}
+
+// 7. Centro é área morta e pinça segurada não repete.
+{
+  const s = sessao('quadrantes')
+  assert.equal(s.frame({ x: 0.5, y: 0.5 }, 0.2), null)
+  assert.equal(s.frame({ x: 0.5, y: 0.5 }, 0.2), null)
+  s.frame({ x: 0.5, y: 0.5 }, 0.6)
+  s.pular(350)
+  assert.equal(s.frame({ x: 0.3, y: 0.5 }, 0.2), 'RIGHT')
+  assert.equal(s.frame({ x: 0.1, y: 0.5 }, 0.2), null)
 }
 
 console.log('gesto: ok')

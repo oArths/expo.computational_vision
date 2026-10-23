@@ -33,8 +33,13 @@ concluído.
 
 ## Como jogar
 
-- **Mover:** junte a ponta do indicador com a do polegar, arraste e solte. O
-  deslocamento define a direção e o jogador desliza até bater numa parede.
+- **Mover:** junte a ponta do indicador com a do polegar e arraste. O movimento
+  dispara assim que o deslocamento passa da margem (não precisa soltar) e o
+  jogador desliza até bater numa parede.
+- **Modo alternativo (quadrantes):** abra o jogo com `?gesto=quadrantes`. A
+  direção passa a ser o lado da câmera onde a pinça foi feita (direita, esquerda,
+  cima, baixo), com uma área morta no centro; a metade ativa fica destacada na
+  câmera. Serve para comparar com o arrasto em mãos reais.
 - **Pausar/despausar:** levante as duas mãos, próximas e acima do centro, por 1 s.
 - **Borda azul:** a mão está sendo rastreada.
 - O cronômetro pausa junto e não conta no tempo total.
