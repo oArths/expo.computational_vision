@@ -92,6 +92,10 @@ function escapar(texto) {
   return div.innerHTML
 }
 
+function formatarPontos(valor) {
+  return valor.toLocaleString('pt-BR')
+}
+
 function irParaHome() {
   clearTimeout(reinicioAutomatico)
   rodando = false
@@ -152,7 +156,7 @@ async function abrirRanking() {
           <li class="rank-row ${index < 3 ? `top${index + 1}` : ''}">
             <span class="rank-pos">${index + 1}º</span>
             <span class="rank-name">${escapar(linha.nickname ?? '')}</span>
-            <span class="rank-value">${linha.score} pts</span>
+            <span class="rank-value">${formatarPontos(linha.score)} pts</span>
             <span class="rank-value">${linha.time}s</span>
           </li>`
       )
@@ -179,7 +183,7 @@ async function finalizarDesafio({ movimentos, segundos }) {
 
   $('result-moves').textContent = movimentos
   $('result-time').textContent = segundos
-  $('result-score').textContent = score
+  $('result-score').textContent = formatarPontos(score)
   $('result-position').textContent = supabaseConfigurado ? '...' : '-'
   $('result-body').innerHTML = ''
   $('result-status').textContent = supabaseConfigurado
@@ -200,7 +204,7 @@ async function finalizarDesafio({ movimentos, segundos }) {
     $('result-body').innerHTML = top
       .map(
         (linha, index) =>
-          `<tr><td>${index + 1}</td><td>${escapar(linha.nickname ?? '')}</td><td>${linha.score}</td><td>${linha.time}s</td></tr>`
+          `<tr><td>${index + 1}</td><td>${escapar(linha.nickname ?? '')}</td><td>${formatarPontos(linha.score)}</td><td>${linha.time}s</td></tr>`
       )
       .join('')
   } catch (erro) {

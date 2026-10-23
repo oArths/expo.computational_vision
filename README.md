@@ -49,8 +49,10 @@ concluído.
 - Os layouts são idênticos para todos (gerados com semente), para o ranking ser
   justo.
 - Ao concluir os 15 níveis, o resultado é enviado ao ranking.
-- Score: `round(1_000_000 / (1 + movimentos × segundos))`. Menos movimentos e
-  menos tempo = maior score.
+- Score: `round(1_000_000 / (1 + gestos × segundos / 20_000))`, exibido com
+  separador de milhar. Menos gestos e menos tempo = maior score.
+- `Movimentos` no HUD conta **gestos** (um por deslizamento), não casas
+  percorridas.
 
 ## Ranking (Supabase)
 

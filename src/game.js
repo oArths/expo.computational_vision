@@ -98,6 +98,7 @@ export function criarJogo({
 
     let row = jogador.row
     let col = jogador.col
+    let deslizou = false
 
     // Desliza até bater na parede, como no jogo original.
     while (true) {
@@ -116,7 +117,13 @@ export function criarJogo({
 
       criarParticulas(trail, centro())
       jogador = { row, col }
-      movimentos += 1
+
+      // Um gesto = um deslizamento inteiro, não cada casa percorrida.
+      if (!deslizou) {
+        movimentos += 1
+        deslizou = true
+      }
+
       animarToken(token, centro())
       hud()
 
