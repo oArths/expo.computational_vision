@@ -44,6 +44,8 @@ const gesto = criarGesto()
 const pausa = criarPausa()
 
 let ultimoRastreado = 0
+let ultimoFrameEm = 0
+let fps = 0
 let reinicioAutomatico = null
 let rodando = false
 
@@ -217,6 +219,9 @@ async function iniciarRastreamento() {
       video,
       detector,
       onResultado(resultado, agora) {
+        if (ultimoFrameEm) fps = fps * 0.9 + (1000 / (agora - ultimoFrameEm)) * 0.1
+        ultimoFrameEm = agora
+
         const hands = resultado.landmarks ?? []
         const primaria = maoPrincipal(hands)
 
@@ -245,7 +250,8 @@ async function iniciarRastreamento() {
           ? `${Math.min(1, (agora - pausa.desde) / 1000) * 100}%`
           : '0%'
 
-        const texto = hands.length >= 2 ? 'Câmera ativa · 2 mãos' : 'Câmera ativa'
+        const maos = hands.length >= 2 ? ' · 2 mãos' : ''
+        const texto = `Câmera ativa · ${Math.round(fps)} fps${maos}`
         if (cameraStatus.textContent !== texto) cameraStatus.textContent = texto
       }
     })

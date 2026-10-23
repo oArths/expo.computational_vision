@@ -1,8 +1,9 @@
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
 
 export async function abrirCamera(video) {
+  // 640x480 basta para o preview e para o detector, e custa 4x menos que 720p.
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
     audio: false
   })
 
