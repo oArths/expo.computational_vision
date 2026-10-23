@@ -33,10 +33,9 @@ concluído.
 
 ## Como jogar
 
-- **Mover:** levante só o indicador, com os outros três dedos fechados, no lado
-  da câmera que corresponde à direção (direita, esquerda, cima ou baixo). O centro
-  é área morta e a metade ativa fica destacada no vídeo. Cada gesto vale um
-  movimento, e o jogador desliza até bater numa parede.
+- **Mover:** aponte o polegar para a direita, para cima ou para baixo, ou o
+  indicador para a esquerda, mantendo os outros três dedos fechados. Cada gesto
+  vale um movimento, e o jogador desliza até bater numa parede.
 - **Pausar/despausar:** levante as duas mãos, próximas e acima do centro, por 1 s.
 - **Borda azul:** a mão está sendo rastreada.
 - O cronômetro pausa junto e não conta no tempo total.
@@ -91,7 +90,7 @@ Importe o repositório na Vercel (framework: Vite), defina as duas variáveis
 index.html                  shell da página
 src/main.js                 câmera, loop de detecção, UI
 src/game.js                 níveis, movimentos, tempo, score
-src/gesture.js              mão fechada, quadrantes, pausa
+src/gesture.js              polegar/indicador apontando, pausa
 src/hands.js                MediaPipe + getUserMedia
 src/overlay.js              desenho dos landmarks
 src/ranking.js              Supabase
@@ -107,5 +106,5 @@ public/models/              modelo do MediaPipe
 
 - Só funciona com HTTPS ou `localhost` (exigência de `getUserMedia`).
 - Sem autenticação no ranking; inserções podem ser forjadas.
-- Os limiares do indicador (1.2 / 1.05) e dos outros dedos (0.85 / 1.0) e o tempo
-  da pausa (1 s) precisam de calibração com a câmera e a iluminação do local.
+- Os limiares do polegar (0.8 / 0.55), do indicador (1.2 / 1.05) e da pausa (1 s)
+  precisam de calibração com a câmera e a iluminação do local.

@@ -6,8 +6,7 @@ import {
   atualizarPausa,
   criarGesto,
   criarPausa,
-  maoPrincipal,
-  quadranteDaMao
+  maoPrincipal
 } from './gesture.js'
 import { abrirCamera, criarDetector, iniciarLoop } from './hands.js'
 import { desenharOverlay, redimensionarOverlay } from './overlay.js'
@@ -42,7 +41,6 @@ const telas = {
 }
 
 const gesto = criarGesto()
-const zonasCamera = [...document.querySelectorAll('.camera-zonas span')]
 const pausa = criarPausa()
 
 let ultimoRastreado = 0
@@ -238,18 +236,6 @@ async function iniciarRastreamento() {
           primaria,
           apontando: gesto.apontando
         })
-
-        const zonaAtiva =
-          primaria >= 0
-            ? quadranteDaMao(
-                hands[primaria],
-                video.videoWidth / video.videoHeight || 1
-              )
-            : null
-
-        for (const zona of zonasCamera) {
-          zona.classList.toggle('ativa', zona.dataset.dir === zonaAtiva)
-        }
 
         if (rodando) {
           const direcao = atualizarGesto(
