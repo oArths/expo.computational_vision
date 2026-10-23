@@ -13,15 +13,25 @@ export async function abrirCamera(video) {
 }
 
 export async function criarDetector() {
-  const fileset = await FilesetResolver.forVisionTasks('/wasm')
+  const criar = async delegate => {
+    const fileset = await FilesetResolver.forVisionTasks('/wasm')
 
-  return HandLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: '/models/hand_landmarker.task' },
-    runningMode: 'VIDEO',
-    numHands: 2,
-    minHandDetectionConfidence: 0.7,
-    minTrackingConfidence: 0.5
-  })
+    return HandLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: '/models/hand_landmarker.task', delegate },
+      runningMode: 'VIDEO',
+      numHands: 2,
+      minHandDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.5
+    })
+  }
+
+  // GPU é mais rápido, mas falha em algumas máquinas; CPU é o plano B.
+  try {
+    return await criar('GPU')
+  } catch (erro) {
+    console.warn('MediaPipe sem GPU, usando CPU.', erro)
+    return criar('CPU')
+  }
 }
 
 export function iniciarLoop({ video, detector, onResultado }) {

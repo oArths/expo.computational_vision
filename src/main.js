@@ -152,7 +152,7 @@ async function iniciarRastreamento() {
       video,
       detector,
       onResultado(resultado, agora) {
-        const hands = resultado.handLandmarks ?? []
+        const hands = resultado.landmarks ?? []
         const primaria = maoPrincipal(hands)
 
         redimensionarOverlay(overlay, video)
