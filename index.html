@@ -73,6 +73,7 @@
         <p>Aponte o dedo indicador para o lado que quer ir e segure por um instante. 15 níveis.</p>
         <label for="nickname">Seu nome</label>
         <input id="nickname" maxlength="20" autocomplete="off" placeholder="até 20 caracteres" />
+        <p id="start-error" class="modal-error"></p>
         <button id="start-button">Começar</button>
       </div>
     </div>
@@ -93,6 +94,13 @@
         </table>
 
         <p id="result-status"></p>
+
+        <div id="result-rename" class="result-rename">
+          <label for="result-nickname">Esse nome já foi usado. Escolha outro para salvar:</label>
+          <input id="result-nickname" maxlength="20" autocomplete="off" placeholder="até 20 caracteres" />
+          <button id="result-save">Salvar</button>
+        </div>
+
         <button id="result-restart">Jogar novamente</button>
       </div>
     </div>

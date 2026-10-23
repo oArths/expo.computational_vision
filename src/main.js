@@ -17,6 +17,7 @@ import {
   calcularScore,
   enviarResultado,
   listarRanking,
+  nicknameEmUso,
   supabaseConfigurado
 } from './ranking.js'
 
@@ -54,6 +55,7 @@ let ultimoFrameEm = 0
 let fps = 0
 let reinicioAutomatico = null
 let rodando = false
+let resultadoAtual = null
 
 const jogo = criarJogo({
   table,
@@ -118,12 +120,32 @@ function abrirJogo() {
   $('nickname').focus()
 }
 
-function iniciarDesafio() {
+async function iniciarDesafio() {
   const nickname = $('nickname').value.trim()
 
   if (!nickname) {
     $('nickname').focus()
     return
+  }
+
+  $('start-error').textContent = ''
+
+  if (supabaseConfigurado) {
+    const botao = $('start-button')
+    botao.disabled = true
+
+    try {
+      if (await nicknameEmUso(nickname)) {
+        $('start-error').textContent = 'Esse nome já está no ranking. Escolha outro.'
+        $('nickname').focus()
+        return
+      }
+    } catch (erro) {
+      // Sem rede a checagem falha; o banco ainda barra o nome repetido no final.
+      console.warn('Não foi possível checar o nome.', erro)
+    } finally {
+      botao.disabled = false
+    }
   }
 
   $('nickname').value = nickname.slice(0, 20)
@@ -180,6 +202,7 @@ function alternarPausa() {
 async function finalizarDesafio({ movimentos, segundos }) {
   rodando = false
   const score = calcularScore(movimentos, segundos)
+  resultadoAtual = { score, segundos }
 
   $('result-moves').textContent = movimentos
   $('result-time').textContent = segundos
@@ -189,18 +212,32 @@ async function finalizarDesafio({ movimentos, segundos }) {
   $('result-status').textContent = supabaseConfigurado
     ? 'Enviando resultado...'
     : 'Ranking desativado (sem configuração).'
+  $('result-rename').classList.remove('active')
+  $('result-nickname').value = ''
 
   mostrarModal(resultModal)
   reinicioAutomatico = setTimeout(irParaHome, 30000)
 
   if (!supabaseConfigurado) return
 
+  await enviarScore($('nickname').value.trim() || 'Anônimo')
+}
+
+async function enviarScore(nickname) {
+  const { score, segundos } = resultadoAtual
+
   try {
-    await enviarResultado({ nickname: $('nickname').value.trim() || 'Anônimo', segundos, score })
+    await enviarResultado({ nickname, segundos, score })
     const { top, posicao } = await buscarRanking({ score, segundos })
 
+    $('nickname').value = nickname
     $('result-position').textContent = `${posicao}º`
     $('result-status').textContent = ''
+    $('result-rename').classList.remove('active')
+
+    // Rearma o retorno automático caso o envio tenha sido refeito.
+    clearTimeout(reinicioAutomatico)
+    reinicioAutomatico = setTimeout(irParaHome, 30000)
     $('result-body').innerHTML = top
       .map(
         (linha, index) =>
@@ -209,6 +246,19 @@ async function finalizarDesafio({ movimentos, segundos }) {
       .join('')
   } catch (erro) {
     console.error(erro)
+
+    // 23505 = nome repetido (índice único no banco). Alguém pode ter usado
+    // durante a partida, depois da checagem inicial.
+    if (erro?.code === '23505') {
+      clearTimeout(reinicioAutomatico)
+      $('result-position').textContent = '-'
+      $('result-status').textContent =
+        'Esse nome já foi usado. Escolha outro para salvar o score.'
+      $('result-rename').classList.add('active')
+      $('result-nickname').focus()
+      return
+    }
+
     $('result-position').textContent = '-'
     $('result-status').textContent =
       'Não foi possível enviar para o ranking. O resultado local acima é válido.'
@@ -312,8 +362,27 @@ $('home-ranking').addEventListener('click', abrirRanking)
 $('ranking-back').addEventListener('click', irParaHome)
 $('exit-button').addEventListener('click', irParaHome)
 $('start-button').addEventListener('click', iniciarDesafio)
+$('nickname').addEventListener('input', () => {
+  $('start-error').textContent = ''
+})
 $('nickname').addEventListener('keydown', event => {
   if (event.key === 'Enter') iniciarDesafio()
+})
+$('result-save').addEventListener('click', async () => {
+  const nickname = $('result-nickname').value.trim()
+
+  if (!nickname) {
+    $('result-nickname').focus()
+    return
+  }
+
+  $('result-save').disabled = true
+  $('result-status').textContent = 'Enviando...'
+  await enviarScore(nickname)
+  $('result-save').disabled = false
+})
+$('result-nickname').addEventListener('keydown', event => {
+  if (event.key === 'Enter') $('result-save').click()
 })
 $('result-restart').addEventListener('click', abrirJogo)
 

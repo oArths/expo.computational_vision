@@ -56,7 +56,7 @@ concluído.
 
 ## Ranking (Supabase)
 
-Copie `.env.example` para `.env.local` e preencha:
+Crie um `.env.local` na raiz com:
 
 ```
 VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
@@ -64,7 +64,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
 Use apenas a **publishable key**. Nunca coloque a `service_role` no frontend.
-O RLS da tabela `Users` precisa permitir leitura e inserção:
+O RLS da tabela `Users` precisa permitir leitura e inserção, e o nickname é único
+(ignorando maiúsculas/minúsculas):
 
 ```sql
 alter table public."Users" enable row level security;
@@ -78,7 +79,15 @@ create policy "insercao publica" on public."Users"
     and score between 0 and 1000000
     and time >= 0
   );
+
+create unique index users_nickname_unico on public."Users" (lower(nickname));
 ```
+
+O índice é o que garante o nome único de verdade: o jogo também consulta o nome
+antes de começar (aviso amigável), mas só o banco impede a duplicata quando dois
+jogadores escolhem o mesmo nome ao mesmo tempo. Se o índice falhar ao criar, há
+nickname repetido na tabela — resolva com
+`select lower(nickname), count(*) from public."Users" group by 1 having count(*) > 1;`.
 
 Sem as policies o jogo funciona, mas mostra "Ranking desativado" e não envia o
 resultado. Não há autenticação: qualquer cliente pode inserir no ranking.

@@ -902,3 +902,19 @@ body.debug #debug-gesto {
   font-size: var(--font-sm);
   color: var(--color-ui-muted);
 }
+
+.modal-error {
+  min-height: 18px;
+  font-size: var(--font-sm);
+  color: var(--color-accent-red, #e53e3e);
+}
+
+.result-rename {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.result-rename.active {
+  display: flex;
+}

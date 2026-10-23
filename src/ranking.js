@@ -26,6 +26,20 @@ export async function enviarResultado({ nickname, segundos, score }) {
   return data
 }
 
+export async function nicknameEmUso(nickname) {
+  if (!supabase) return false
+
+  const { data, error } = await supabase
+    .from('Users')
+    .select('id')
+    .ilike('nickname', nickname)
+    .limit(1)
+
+  if (error) throw error
+
+  return (data ?? []).length > 0
+}
+
 export async function listarRanking() {
   if (!supabase) return []
 
