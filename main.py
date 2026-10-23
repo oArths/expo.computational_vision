@@ -8,7 +8,6 @@ from flask_cors import CORS
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-
 movimento_atual: str | None = None
 
 LARGURA_CAM, ALTURA_CAM = 1920, 1080
