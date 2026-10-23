@@ -60,8 +60,9 @@ export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTe
   }
 
   function finalizar() {
-    ativo = false
+    // Precisa ler o tempo antes de desligar o relógio.
     const segundos = Math.max(1, Math.round(tempoMs() / 1000))
+    ativo = false
     aoTerminar({ movimentos, segundos })
   }
 
@@ -135,6 +136,11 @@ export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTe
 
   // Mostra o nível 1 atrás do modal inicial; só começa a valer no reiniciar.
   carregarNivel()
+
+  // Mantém o cronômetro andando na tela sem depender de um movimento.
+  setInterval(() => {
+    if (ativo && !pausado) hud()
+  }, 250)
 
   return {
     mover,

@@ -27,6 +27,8 @@
 ## Tempo e score
 
 - Tempo com `performance.now()`; pausa congela; `setInterval` não é usado para medir.
+- O HUD é atualizado por um `setInterval` de 250 ms em `src/game.js` (independente de movimento).
+- `finalizar()` lê `tempoMs()` **antes** de `ativo = false`; inverter a ordem faz o tempo virar 1 s.
 - Score: `round(1_000_000 / (1 + movimentos × segundos))`, enviado somente ao concluir o nível 15.
 
 ## Supabase
