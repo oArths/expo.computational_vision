@@ -211,15 +211,18 @@ async function iniciarRastreamento() {
   try {
     await abrirCamera(video)
 
-    const detector = await criarDetector()
+    const { detector, delegado } = await criarDetector()
 
-    cameraStatus.textContent = 'Câmera ativa'
+    cameraStatus.textContent = `Câmera ativa · ${delegado}`
 
     iniciarLoop({
       video,
       detector,
       onResultado(resultado, agora) {
-        if (ultimoFrameEm) fps = fps * 0.9 + (1000 / (agora - ultimoFrameEm)) * 0.1
+        if (ultimoFrameEm) {
+          const instantaneo = 1000 / (agora - ultimoFrameEm)
+          fps = fps ? fps * 0.9 + instantaneo * 0.1 : instantaneo
+        }
         ultimoFrameEm = agora
 
         const hands = resultado.landmarks ?? []
@@ -267,7 +270,7 @@ async function iniciarRastreamento() {
           : '0%'
 
         const maos = hands.length >= 2 ? ' · 2 mãos' : ''
-        const texto = `Câmera ativa · ${Math.round(fps)} fps${maos}`
+        const texto = `Câmera ativa · ${Math.round(fps)} fps${maos} · ${delegado}`
         if (cameraStatus.textContent !== texto) cameraStatus.textContent = texto
       }
     })
