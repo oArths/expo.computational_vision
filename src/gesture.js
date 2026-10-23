@@ -1,19 +1,13 @@
-// Gesto de mão fechada, direção por quadrante e pose de pausa.
+// Gesto de pontas dos dedos juntas, direção por quadrante e pose de pausa.
 
 const PULSO = 0
 const BASE_INDICADOR = 9
 
-// Ponta e articulação de cada dedo (sem o polegar).
-const DEDOS = [
-  [8, 6],
-  [12, 10],
-  [16, 14],
-  [20, 18]
-]
+// Pontas dos quatro dedos (sem o polegar).
+const PONTAS = [8, 12, 16, 20]
 
-const CURL = 0.9
-const FECHADA_ATIVA = 4
-const FECHADA_SOLTA = 2
+const PONTAS_JUNTAS = 0.35
+const PONTAS_SOLTAS = 0.55
 const ZONA_MORTA = 0.12
 const PERDA_MAO_MS = 250
 const TROCA_MAO = 0.25
@@ -43,21 +37,29 @@ export function maoPrincipal(hands) {
 }
 
 export function criarGesto() {
-  return { fechada: false, escala: 0, vistoEm: 0 }
+  return { juntas: false, escala: 0, vistoEm: 0 }
 }
 
-// Dedo curvado = ponta mais perto do pulso que a articulação do meio.
-// Funciona com a mão em qualquer rotação e não depende do tamanho da mão.
-function dedosCurvados(hand) {
-  let total = 0
+// O quanto as pontas estão espalhadas em volta do próprio centro, relativo ao
+// tamanho da mão. Vale para a mão em qualquer rotação e em qualquer distância.
+function espalhamentoDasPontas(hand, escala) {
+  let cx = 0
+  let cy = 0
 
-  for (const [ponta, articulacao] of DEDOS) {
-    if (distancia(hand[ponta], hand[PULSO]) < distancia(hand[articulacao], hand[PULSO]) * CURL) {
-      total += 1
-    }
+  for (const ponta of PONTAS) {
+    cx += hand[ponta].x
+    cy += hand[ponta].y
   }
 
-  return total
+  cx /= PONTAS.length
+  cy /= PONTAS.length
+
+  let maior = 0
+  for (const ponta of PONTAS) {
+    maior = Math.max(maior, Math.hypot(hand[ponta].x - cx, hand[ponta].y - cy))
+  }
+
+  return maior / escala
 }
 
 function direcaoDoLado(dx, dy) {
@@ -66,7 +68,7 @@ function direcaoDoLado(dx, dy) {
   return dy < 0 ? 'TOP' : 'BOTTOM'
 }
 
-// A direção é o lado da câmera onde a mão fechou.
+// A direção é o lado da câmera onde as pontas se juntaram.
 export function quadranteDoPonto(ponto, aspecto = 1) {
   const dx = ponto.x - 0.5
   const dy = (ponto.y - 0.5) / aspecto
@@ -76,18 +78,18 @@ export function quadranteDoPonto(ponto, aspecto = 1) {
   return direcaoDoLado(dx, dy)
 }
 
-// Posição da palma, não da ponta do dedo: não muda ao fechar a mão.
+// Posição da palma, não das pontas: não muda ao juntar os dedos.
 export function quadranteDaMao(hand, aspecto = 1) {
   return quadranteDoPonto(hand[BASE_INDICADOR], aspecto)
 }
 
-// Dispara uma direção por fechada de mão, no momento em que os dedos se curvam.
+// Dispara uma direção por gesto, no momento em que as pontas se encontram.
 // `aspecto` (largura/altura) iguala o peso dos dois eixos em pixels.
 export function atualizarGesto(estado, hand, agora, aspecto = 1) {
   if (!hand) {
     // O detector perde a mão de vez em quando; só zera se ela sumir de verdade.
-    if (estado.fechada && agora - estado.vistoEm > PERDA_MAO_MS) {
-      estado.fechada = false
+    if (estado.juntas && agora - estado.vistoEm > PERDA_MAO_MS) {
+      estado.juntas = false
     }
     return null
   }
@@ -97,22 +99,22 @@ export function atualizarGesto(estado, hand, agora, aspecto = 1) {
   const escala = escalaMao(hand)
   if (escala === 0) return null
 
-  // Outra mão (ou outra pessoa): não conta como fechada nova até abrir.
+  // Outra mão (ou outra pessoa): não conta como gesto novo até soltar.
   if (estado.escala && Math.abs(escala - estado.escala) / estado.escala > TROCA_MAO) {
-    estado.fechada = true
+    estado.juntas = true
   }
   estado.escala = escala
 
-  const curvados = dedosCurvados(hand)
+  const espalhamento = espalhamentoDasPontas(hand, escala)
 
-  if (!estado.fechada) {
-    if (curvados < FECHADA_ATIVA) return null
-    estado.fechada = true
+  if (!estado.juntas) {
+    if (espalhamento > PONTAS_JUNTAS) return null
+    estado.juntas = true
     return quadranteDaMao(hand, aspecto)
   }
 
-  if (curvados <= FECHADA_SOLTA) {
-    estado.fechada = false
+  if (espalhamento > PONTAS_SOLTAS) {
+    estado.juntas = false
   }
 
   return null
