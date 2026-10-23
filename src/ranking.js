@@ -24,22 +24,29 @@ export async function enviarResultado({ nickname, segundos, score }) {
   return data
 }
 
-export async function buscarRanking({ score, segundos }) {
-  if (!supabase) return { top: [], posicao: null }
+export async function listarRanking() {
+  if (!supabase) return []
 
-  const { data: top, error } = await supabase
+  const { data, error } = await supabase
     .from('Users')
     .select('nickname, score, time')
     .order('score', { ascending: false })
     .order('time', { ascending: true })
-    .limit(10)
+    .limit(100)
 
   if (error) throw error
+  return data ?? []
+}
+
+export async function buscarRanking({ score, segundos }) {
+  if (!supabase) return { top: [], posicao: null }
+
+  const top = (await listarRanking()).slice(0, 10)
 
   const { count } = await supabase
     .from('Users')
     .select('id', { count: 'exact', head: true })
     .or(`score.gt.${score},and(score.eq.${score},time.lt.${segundos})`)
 
-  return { top: top ?? [], posicao: (count ?? 0) + 1 }
+  return { top, posicao: (count ?? 0) + 1 }
 }

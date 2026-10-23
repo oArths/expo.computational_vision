@@ -1,3 +1,4 @@
+import confetti from 'canvas-confetti'
 import './style.css'
 import { criarJogo } from './game.js'
 import {
@@ -9,7 +10,13 @@ import {
 } from './gesture.js'
 import { abrirCamera, criarDetector, iniciarLoop } from './hands.js'
 import { desenharOverlay, redimensionarOverlay } from './overlay.js'
-import { buscarRanking, calcularScore, enviarResultado, supabaseConfigurado } from './ranking.js'
+import {
+  buscarRanking,
+  calcularScore,
+  enviarResultado,
+  listarRanking,
+  supabaseConfigurado
+} from './ranking.js'
 
 const $ = id => document.getElementById(id)
 
@@ -26,6 +33,12 @@ const pauseHint = $('pause-hint')
 const pauseProgress = $('pause-progress')
 const startModal = $('start-modal')
 const resultModal = $('result-modal')
+
+const telas = {
+  home: $('screen-home'),
+  ranking: $('screen-ranking'),
+  jogo: $('screen-game')
+}
 
 const gesto = criarGesto()
 const pausa = criarPausa()
@@ -45,8 +58,17 @@ const jogo = criarJogo({
     $('moves').textContent = movimentos
     $('time').textContent = segundos
   },
+  aoPassarNivel() {
+    confetti({ particleCount: 110, spread: 75, origin: { y: 0.6 } })
+  },
   aoTerminar: finalizarDesafio
 })
+
+function mostrarTela(nome) {
+  Object.entries(telas).forEach(([chave, elemento]) => {
+    elemento.classList.toggle('active', chave === nome)
+  })
+}
 
 function mostrarModal(modal) {
   modal.classList.add('active')
@@ -56,15 +78,83 @@ function esconderModal(modal) {
   modal.classList.remove('active')
 }
 
-function reiniciarDesafio() {
+function escapar(texto) {
+  const div = document.createElement('div')
+  div.textContent = texto
+  return div.innerHTML
+}
+
+function irParaHome() {
+  clearTimeout(reinicioAutomatico)
+  rodando = false
+  esconderModal(resultModal)
+  esconderModal(startModal)
+  esconderModal(pauseOverlay)
+  pauseProgress.style.width = '0%'
+  mostrarTela('home')
+}
+
+function abrirJogo() {
   clearTimeout(reinicioAutomatico)
   esconderModal(resultModal)
   esconderModal(pauseOverlay)
-  pauseProgress.style.width = '0%'
-  rodando = false
   $('nickname').value = ''
+  rodando = false
+  jogo.reiniciar()
+  mostrarTela('jogo')
   mostrarModal(startModal)
   $('nickname').focus()
+}
+
+function iniciarDesafio() {
+  const nickname = $('nickname').value.trim()
+
+  if (!nickname) {
+    $('nickname').focus()
+    return
+  }
+
+  $('nickname').value = nickname.slice(0, 20)
+  esconderModal(startModal)
+  reinicioAutomatico = null
+  rodando = true
+  gesto.pinching = false
+  gesto.inicio = null
+  gesto.cooldownAte = 0
+  pausa.desde = null
+  pausa.armada = true
+
+  jogo.reiniciar()
+}
+
+async function abrirRanking() {
+  mostrarTela('ranking')
+  $('ranking-list').innerHTML = ''
+  $('ranking-status').textContent = supabaseConfigurado
+    ? 'Carregando...'
+    : 'Ranking desativado (sem configuração).'
+
+  if (!supabaseConfigurado) return
+
+  try {
+    const lista = await listarRanking()
+
+    $('ranking-status').textContent = lista.length ? '' : 'Nenhum resultado ainda.'
+    $('ranking-list').innerHTML = lista
+      .map(
+        (linha, index) => `
+          <li class="rank-row ${index < 3 ? `top${index + 1}` : ''}">
+            <span class="rank-pos">${index + 1}º</span>
+            <span class="rank-name">${escapar(linha.nickname ?? '')}</span>
+            <span class="rank-value">${linha.score} pts</span>
+            <span class="rank-value">${linha.time}s</span>
+          </li>`
+      )
+      .join('')
+  } catch (erro) {
+    console.error(erro)
+    $('ranking-status').textContent = 'Não foi possível carregar o ranking.'
+  }
 }
 
 function alternarPausa() {
@@ -86,10 +176,12 @@ async function finalizarDesafio({ movimentos, segundos }) {
   $('result-score').textContent = score
   $('result-position').textContent = supabaseConfigurado ? '...' : '-'
   $('result-body').innerHTML = ''
-  $('result-status').textContent = supabaseConfigurado ? 'Enviando resultado...' : 'Ranking desativado (sem configuração).'
+  $('result-status').textContent = supabaseConfigurado
+    ? 'Enviando resultado...'
+    : 'Ranking desativado (sem configuração).'
 
   mostrarModal(resultModal)
-  reinicioAutomatico = setTimeout(reiniciarDesafio, 30000)
+  reinicioAutomatico = setTimeout(irParaHome, 30000)
 
   if (!supabaseConfigurado) return
 
@@ -108,37 +200,9 @@ async function finalizarDesafio({ movimentos, segundos }) {
   } catch (erro) {
     console.error(erro)
     $('result-position').textContent = '-'
-    $('result-status').textContent = 'Não foi possível enviar para o ranking. O resultado local acima é válido.'
+    $('result-status').textContent =
+      'Não foi possível enviar para o ranking. O resultado local acima é válido.'
   }
-}
-
-function escapar(texto) {
-  const div = document.createElement('div')
-  div.textContent = texto
-  return div.innerHTML
-}
-
-function iniciarDesafio() {
-  const nickname = $('nickname').value.trim()
-
-  if (!nickname) {
-    $('nickname').focus()
-    return
-  }
-
-  $('nickname').value = nickname.slice(0, 20)
-  esconderModal(startModal)
-  esconderModal(resultModal)
-  esconderModal(pauseOverlay)
-  reinicioAutomatico = null
-  rodando = true
-  gesto.pinching = false
-  gesto.inicio = null
-  gesto.cooldownAte = 0
-  pausa.desde = null
-  pausa.armada = true
-
-  jogo.reiniciar()
 }
 
 async function iniciarRastreamento() {
@@ -208,12 +272,15 @@ document.addEventListener('keydown', event => {
 
 window.addEventListener('resize', () => jogo.reposicionar())
 
+$('home-start').addEventListener('click', abrirJogo)
+$('home-ranking').addEventListener('click', abrirRanking)
+$('ranking-back').addEventListener('click', irParaHome)
+$('exit-button').addEventListener('click', irParaHome)
 $('start-button').addEventListener('click', iniciarDesafio)
 $('nickname').addEventListener('keydown', event => {
   if (event.key === 'Enter') iniciarDesafio()
 })
-$('restart').addEventListener('click', reiniciarDesafio)
-$('result-restart').addEventListener('click', reiniciarDesafio)
+$('result-restart').addEventListener('click', abrirJogo)
 
 iniciarRastreamento()
-reiniciarDesafio()
+mostrarTela('home')

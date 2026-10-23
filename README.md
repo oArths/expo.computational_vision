@@ -20,6 +20,17 @@ npm run preview   # testa o build
 npm run levels    # regenera src/levels.json
 ```
 
+## Telas
+
+1. **Inicial:** título grande e o botão "Iniciar"; link discreto para o ranking.
+2. **Ranking:** lista do melhor para o pior com o pódio (1º, 2º e 3º em destaque).
+3. **Jogo:** nome no canto superior esquerdo, câmera no superior direito, contador
+   acima do labirinto e o labirinto com 70% da altura da tela em todos os níveis.
+
+Ao entrar no jogo, abre a modal de nome. O cronômetro **só começa no primeiro
+movimento** — daí em diante ele roda e congela nas pausas. Confete a cada nível
+concluído.
+
 ## Como jogar
 
 - **Mover:** junte a ponta do indicador com a do polegar, arraste e solte. O

@@ -5,7 +5,9 @@
 - Projeto Vite + JavaScript puro (sem framework). `npm run dev` sobe o app; `npm run build` gera `dist/`.
 - `npm run dev` e `npm run build` copiam o wasm do MediaPipe de `node_modules` para `public/wasm` via `tools/copy-wasm.mjs`.
 - O entrypoint é `index.html`, que carrega o GSAP por CDN e `src/main.js` como módulo. O CSS é importado por `src/main.js`.
+- As três telas (`#screen-home`, `#screen-ranking`, `#screen-game`) são seções fixas alternadas por `.active` em `src/main.js`; modais ficam fora delas.
 - `src/main.js` liga câmera, MediaPipe, gestos, UI e ranking. `src/game.js` cuida de nível, movimentos, tempo e score.
+- Confete com `canvas-confetti`, disparado em `aoPassarNivel` (uma vez por nível concluído, não no último).
 - Sem suíte de testes. Verificação: `npm run build` e abrir o app.
 - `src/levels.json` é gerado por `npm run levels`; não editar à mão.
 
@@ -27,6 +29,7 @@
 ## Tempo e score
 
 - Tempo com `performance.now()`; pausa congela; `setInterval` não é usado para medir.
+- O relógio só liga no primeiro movimento (`iniciado` em `src/game.js`); antes disso `tempoMs()` retorna 0.
 - O HUD é atualizado por um `setInterval` de 250 ms em `src/game.js` (independente de movimento).
 - `finalizar()` lê `tempoMs()` **antes** de `ativo = false`; inverter a ordem faz o tempo virar 1 s.
 - Score: `round(1_000_000 / (1 + movimentos × segundos))`, enviado somente ao concluir o nível 15.

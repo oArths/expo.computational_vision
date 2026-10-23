@@ -14,7 +14,17 @@ const PASSOS = {
   RIGHT: { row: 0, col: 1 }
 }
 
-export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTerminar }) {
+const ALTURA_LABIRINTO = 0.7
+
+export function criarJogo({
+  table,
+  container,
+  token,
+  trail,
+  aoAtualizarHud,
+  aoTerminar,
+  aoPassarNivel
+}) {
   let indice = 0
   let nivel = levels[0]
   let jogador = { ...nivel.start }
@@ -23,10 +33,12 @@ export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTe
   let retomadoEm = performance.now()
   let pausado = false
   let ativo = false
+  let iniciado = false
 
   const centro = () => centroCelula(table, container, jogador.row, jogador.col)
 
   function tempoMs() {
+    if (!iniciado) return 0
     if (!ativo) return acumulado
     return pausado ? acumulado : acumulado + performance.now() - retomadoEm
   }
@@ -41,11 +53,14 @@ export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTe
     })
   }
 
-  // Níveis de 34x34 não cabem na tela com célula de 30px.
+  // O labirinto ocupa sempre 70% da altura da tela, independente do nível.
   function ajustarTamanho() {
-    const altura = window.innerHeight - 240
-    const largura = window.innerWidth - 460
-    const celula = Math.max(10, Math.min(30, Math.floor(Math.min(altura, largura) / nivel.rows)))
+    const altura = window.innerHeight * ALTURA_LABIRINTO
+    const largura = window.innerWidth * 0.9
+    const celula = Math.max(
+      6,
+      Math.floor(Math.min(altura / nivel.rows, largura / nivel.cols))
+    )
     container.style.setProperty('--maze-cell-size', `${celula}px`)
   }
 
@@ -72,6 +87,7 @@ export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTe
       return
     }
 
+    aoPassarNivel()
     indice += 1
     carregarNivel()
   }
@@ -92,6 +108,12 @@ export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTe
 
       if (!celula || celula === 'wall' || celula === 'boundary') break
 
+      // O relógio só começa no primeiro movimento.
+      if (!iniciado) {
+        iniciado = true
+        retomadoEm = performance.now()
+      }
+
       criarParticulas(trail, centro())
       jogador = { row, col }
       movimentos += 1
@@ -109,7 +131,7 @@ export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTe
     indice = 0
     movimentos = 0
     acumulado = 0
-    retomadoEm = performance.now()
+    iniciado = false
     pausado = false
     ativo = true
     carregarNivel()
@@ -117,14 +139,14 @@ export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTe
 
   function pausar() {
     if (!ativo || pausado) return
-    acumulado += performance.now() - retomadoEm
+    if (iniciado) acumulado += performance.now() - retomadoEm
     pausado = true
     hud()
   }
 
   function retomar() {
     if (!ativo || !pausado) return
-    retomadoEm = performance.now()
+    if (iniciado) retomadoEm = performance.now()
     pausado = false
     hud()
   }
