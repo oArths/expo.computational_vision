@@ -11,9 +11,9 @@ const MARGEM_GESTO = 0.06
 const DOMINANCIA = 1.3
 const COOLDOWN_MS = 300
 
-const PAUSA_ALTURA = 0.65
-const PAUSA_PUNHOS = 0.5
+const PAUSA_PUNHOS = 0.8
 const PAUSA_ESPERA_MS = 1000
+const PAUSA_TOLERANCIA_MS = 300
 
 function distancia(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y)
@@ -78,23 +78,29 @@ export function atualizarGesto(estado, hand, agora) {
 }
 
 export function criarPausa() {
-  return { desde: null, armada: true }
+  return { desde: null, armada: true, ultimaPose: 0 }
 }
 
-// Duas mãos próximas e acima do centro por 1s. Evita pausa com mão de terceiro.
+// Duas mãos próximas por 1s. A distância entre punhos evita pausar por causa da
+// mão de alguém que está passando atrás.
 export function atualizarPausa(estado, hands, agora) {
   const pose =
     hands.length >= 2 &&
-    hands[0][PULSO].y < PAUSA_ALTURA &&
-    hands[1][PULSO].y < PAUSA_ALTURA &&
     distancia(hands[0][PULSO], hands[1][PULSO]) < PAUSA_PUNHOS
 
-  if (!pose) {
+  if (pose) estado.ultimaPose = agora
+
+  // O detector perde uma mão de vez em quando; sem tolerância o contador zera
+  // e a pausa nunca completa.
+  const tolerado = agora - estado.ultimaPose < PAUSA_TOLERANCIA_MS
+
+  if (!pose && !tolerado) {
     estado.desde = null
     estado.armada = true
     return false
   }
 
+  if (!pose) return false
   if (!estado.armada) return false
   if (estado.desde === null) estado.desde = agora
 
