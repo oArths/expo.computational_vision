@@ -11,8 +11,8 @@ const MARGEM_GESTO = 0.06
 const DOMINANCIA = 1.3
 const COOLDOWN_MS = 300
 
-const PAUSA_ALTURA = 0.5
-const PAUSA_PUNHOS = 0.3
+const PAUSA_ALTURA = 0.65
+const PAUSA_PUNHOS = 0.5
 const PAUSA_ESPERA_MS = 1000
 
 function distancia(a, b) {

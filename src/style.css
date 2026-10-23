@@ -507,31 +507,30 @@ h1 {
   box-shadow: inset 0 0 18px rgba(79, 172, 254, 0.15);
 }
 
-#pause-overlay {
+#pause-hint {
   position: fixed;
-  inset: 0;
+  left: 50%;
+  bottom: 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-md);
-  background: rgba(45, 52, 54, 0.72);
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(45, 52, 54, 0.85);
   color: white;
-  text-align: center;
+  font-size: var(--font-sm);
+  border-radius: var(--radius-md);
+  transform: translateX(-50%);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 60;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+  z-index: 55;
 }
 
-#pause-overlay.active {
+#pause-hint.visible {
   opacity: 1;
   visibility: visible;
-}
-
-#pause-overlay h2 {
-  font-size: 64px;
-  letter-spacing: 8px;
 }
 
 .pause-bar {

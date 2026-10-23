@@ -22,6 +22,7 @@ const overlay = $('camera-overlay')
 const cameraStatus = $('camera-status')
 const trackerRing = $('tracker-ring')
 const pauseOverlay = $('pause-overlay')
+const pauseHint = $('pause-hint')
 const pauseProgress = $('pause-progress')
 const startModal = $('start-modal')
 const resultModal = $('result-modal')
@@ -172,10 +173,16 @@ async function iniciarRastreamento() {
           if (direcao) jogo.mover(direcao)
         }
 
-        if (atualizarPausa(pausa, hands, agora)) alternarPausa()
+        if (rodando && atualizarPausa(pausa, hands, agora)) alternarPausa()
 
-        const progresso = pausa.desde === null ? 0 : Math.min(1, (agora - pausa.desde) / 1000)
-        pauseProgress.style.width = `${progresso * 100}%`
+        const segurando = rodando && pausa.desde !== null
+        pauseHint.classList.toggle('visible', segurando)
+        pauseProgress.style.width = segurando
+          ? `${Math.min(1, (agora - pausa.desde) / 1000) * 100}%`
+          : '0%'
+
+        const texto = hands.length >= 2 ? 'Câmera ativa · 2 mãos' : 'Câmera ativa'
+        if (cameraStatus.textContent !== texto) cameraStatus.textContent = texto
       }
     })
   } catch (erro) {
