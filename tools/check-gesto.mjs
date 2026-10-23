@@ -14,8 +14,8 @@ function mao({ x = 0.5, y = 0.5, pinca = 0.6, escala = 0.1 }) {
   return hand
 }
 
-function sessao(modo = 'arrasto') {
-  const estado = criarGesto(modo)
+function sessao() {
+  const estado = criarGesto()
   let relogio = 0
   return {
     estado,
@@ -33,92 +33,59 @@ function sessao(modo = 'arrasto') {
   }
 }
 
-// 1. Fecha a pinça e arrasta: dispara no meio do arrasto, uma vez só.
+// 1. Um lado por quadrante, no instante da pinça.
 {
   const s = sessao()
-  s.frame({ x: 0.5, y: 0.5 })
+  s.frame({ x: 0.2, y: 0.5 }, 0.6)
+  assert.equal(s.frame({ x: 0.2, y: 0.5 }, 0.2), 'RIGHT')
+  s.frame({ x: 0.8, y: 0.5 }, 0.6)
+  assert.equal(s.frame({ x: 0.8, y: 0.5 }, 0.2), 'LEFT')
+  s.frame({ x: 0.5, y: 0.1 }, 0.6)
+  assert.equal(s.frame({ x: 0.5, y: 0.1 }, 0.2), 'TOP')
+  s.frame({ x: 0.5, y: 0.9 }, 0.6)
+  assert.equal(s.frame({ x: 0.5, y: 0.9 }, 0.2), 'BOTTOM')
+}
+
+// 2. Centro é área morta.
+{
+  const s = sessao()
   assert.equal(s.frame({ x: 0.5, y: 0.5 }, 0.2), null)
-  assert.equal(s.estado.pinching, true)
-  assert.equal(s.frame({ x: 0.47, y: 0.5 }, 0.2), null, 'abaixo da margem')
-  assert.equal(s.frame({ x: 0.45, y: 0.5 }, 0.2), 'RIGHT')
-  assert.equal(s.frame({ x: 0.4, y: 0.5 }, 0.2), null, 'já consumiu a pinça')
+  assert.equal(s.frame({ x: 0.54, y: 0.52 }, 0.2), null)
 }
 
-// 2. Pinça formada já em movimento (o caso da pinça rápida): ainda conta.
+// 3. Pinça segurada não repete, e soltar libera outra.
 {
   const s = sessao()
-  s.frame({ x: 0.5, y: 0.5 })
-  s.frame({ x: 0.5, y: 0.5 })
-  assert.equal(s.frame({ x: 0.48, y: 0.5 }, 0.2), null)
-  assert.equal(s.frame({ x: 0.42, y: 0.5 }, 0.2), 'RIGHT')
+  assert.equal(s.frame({ x: 0.2, y: 0.5 }, 0.2), 'RIGHT')
+  assert.equal(s.frame({ x: 0.2, y: 0.5 }, 0.2), null)
+  assert.equal(s.frame({ x: 0.2, y: 0.5 }, 0.6), null)
+  assert.equal(s.frame({ x: 0.8, y: 0.5 }, 0.2), 'LEFT')
 }
 
-// 3. Diagonal: escolhe o eixo dominante em pixels, sem zona morta.
+// 4. Pinça rápida (um frame fechada) conta do mesmo jeito.
 {
   const s = sessao()
-  s.frame({ x: 0.5, y: 0.5 })
-  s.frame({ x: 0.5, y: 0.5 }, 0.2)
-  assert.equal(s.frame({ x: 0.44, y: 0.54 }, 0.2), 'RIGHT')
+  assert.equal(s.frame({ x: 0.5, y: 0.1 }, 0.2), 'TOP')
+  assert.equal(s.frame({ x: 0.5, y: 0.1 }, 0.6), null)
 }
 
-// 4. Soltar sem mover não conta; depois do disparo, o cooldown segura a repetição.
+// 5. Mão perdida por mais de 250ms reseta.
 {
   const s = sessao()
-  s.frame({ x: 0.5, y: 0.5 })
-  s.frame({ x: 0.5, y: 0.5 }, 0.2)
-  assert.equal(s.frame({ x: 0.5, y: 0.5 }, 0.6), null)
-  s.frame({ x: 0.5, y: 0.5 }, 0.2)
-  assert.equal(s.frame({ x: 0.5, y: 0.56 }, 0.2), 'BOTTOM')
-
-  const c = sessao()
-  c.frame({ x: 0.5, y: 0.5 })
-  c.frame({ x: 0.5, y: 0.5 }, 0.2)
-  assert.equal(c.frame({ x: 0.4, y: 0.5 }, 0.2), 'RIGHT')
-  c.frame({ x: 0.4, y: 0.5 }, 0.6)
-  c.frame({ x: 0.4, y: 0.5 }, 0.2)
-  assert.equal(c.frame({ x: 0.3, y: 0.5 }, 0.2), null, 'cooldown de 300ms')
-  c.pular(400)
-  c.frame({ x: 0.3, y: 0.5 }, 0.6)
-  c.frame({ x: 0.3, y: 0.5 }, 0.2)
-  assert.equal(c.frame({ x: 0.2, y: 0.5 }, 0.2), 'RIGHT')
-}
-
-// 5. Mão perdida por mais de 250ms reseta e não dispara movimento fantasma.
-{
-  const s = sessao()
-  s.frame({ x: 0.5, y: 0.5 })
-  s.frame({ x: 0.5, y: 0.5 }, 0.2)
+  assert.equal(s.frame({ x: 0.2, y: 0.5 }, 0.2), 'RIGHT')
   s.semMao()
   s.pular(300)
   s.semMao()
   assert.equal(s.estado.pinching, false)
-  assert.equal(s.frame({ x: 0.9, y: 0.9 }, 0.2), null)
 }
 
-// 6. Modo quadrantes: a direção é o lado da câmera onde a pinça acontece.
+// 6. Troca de mão (escala muda muito) não dispara no frame da troca.
 {
-  const s = sessao('quadrantes')
-  assert.equal(s.frame({ x: 0.2, y: 0.5 }, 0.2), 'RIGHT')
-  s.frame({ x: 0.2, y: 0.5 }, 0.6)
-  s.pular(350)
-  assert.equal(s.frame({ x: 0.8, y: 0.5 }, 0.2), 'LEFT')
-  s.frame({ x: 0.8, y: 0.5 }, 0.6)
-  s.pular(350)
-  assert.equal(s.frame({ x: 0.5, y: 0.1 }, 0.2), 'TOP')
-  s.frame({ x: 0.5, y: 0.1 }, 0.6)
-  s.pular(350)
-  assert.equal(s.frame({ x: 0.5, y: 0.9 }, 0.2), 'BOTTOM')
-}
-
-// 7. Centro é área morta e pinça segurada não repete.
-{
-  const s = sessao('quadrantes')
-  assert.equal(s.frame({ x: 0.5, y: 0.5 }, 0.2), null)
-  assert.equal(s.frame({ x: 0.5, y: 0.5 }, 0.2), null)
-  s.frame({ x: 0.5, y: 0.5 }, 0.6)
-  s.pular(350)
-  assert.equal(s.frame({ x: 0.3, y: 0.5 }, 0.2), 'RIGHT')
-  assert.equal(s.frame({ x: 0.1, y: 0.5 }, 0.2), null)
+  const s = sessao()
+  assert.equal(s.frame({ x: 0.2, y: 0.5, escala: 0.1 }, 0.2), 'RIGHT')
+  assert.equal(s.frame({ x: 0.8, y: 0.5, escala: 0.05 }, 0.2), null)
+  assert.equal(s.frame({ x: 0.8, y: 0.5, escala: 0.05 }, 0.6), null)
+  assert.equal(s.frame({ x: 0.8, y: 0.5, escala: 0.05 }, 0.2), 'LEFT')
 }
 
 console.log('gesto: ok')

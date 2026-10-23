@@ -1,4 +1,4 @@
-// Detecção do gesto de pinça (indicador + polegar) e da pose de pausa.
+// Detecção do gesto de pinça (indicador + polegar), direção por quadrante e pose de pausa.
 
 const POLEGAR = 4
 const INDICADOR = 8
@@ -7,14 +7,9 @@ const BASE_INDICADOR = 9
 
 const PINCA_ATIVA = 0.25
 const PINCA_SOLTA = 0.35
-const PINCA_FORMANDO = 0.45
-const MARGEM_GESTO = 0.04
-const COOLDOWN_MS = 300
-const HISTORICO_MS = 200
-const PINCA_MAXIMA_MS = 2500
+const ZONA_MORTA = 0.12
 const PERDA_MAO_MS = 250
 const TROCA_MAO = 0.25
-const ZONA_MORTA = 0.12
 
 const PAUSA_PUNHOS = 0.8
 const PAUSA_ESPERA_MS = 1000
@@ -40,45 +35,33 @@ export function maoPrincipal(hands) {
   return melhor
 }
 
-export function criarGesto(modo = 'arrasto') {
-  return {
-    modo,
-    pinching: false,
-    inicio: null,
-    inicioEm: 0,
-    consumido: false,
-    cooldownAte: 0,
-    escala: 0,
-    historico: [],
-    vistoEm: 0
-  }
+export function criarGesto() {
+  return { pinching: false, escala: 0, vistoEm: 0 }
 }
 
-function direcaoDoDelta(dx, dy) {
-  // A tela é espelhada, então mover a mão para a direita diminui o x da imagem.
+function direcaoDoLado(dx, dy) {
+  // A tela é espelhada, então o lado direito da imagem (x < 0.5) é a direita do jogador.
   if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'RIGHT' : 'LEFT'
   return dy < 0 ? 'TOP' : 'BOTTOM'
 }
 
-// Modo quadrantes: a direção é o lado da câmera onde a pinça foi feita.
+// A direção é o lado da câmera onde a pinça foi feita.
 export function quadranteDoPonto(ponto, aspecto = 1) {
   const dx = ponto.x - 0.5
   const dy = (ponto.y - 0.5) / aspecto
 
   if (Math.abs(dx) < ZONA_MORTA && Math.abs(dy) < ZONA_MORTA) return null
 
-  return direcaoDoDelta(dx, dy)
+  return direcaoDoLado(dx, dy)
 }
 
-// Dispara assim que a mão pinçada se desloca, sem esperar a soltura.
+// Dispara uma direção por pinça, no momento em que os dedos se fecham.
 // `aspecto` (largura/altura) iguala o peso dos dois eixos em pixels.
 export function atualizarGesto(estado, hand, agora, aspecto = 1) {
   if (!hand) {
     // O detector perde a mão de vez em quando; só zera se ela sumir de verdade.
     if (estado.pinching && agora - estado.vistoEm > PERDA_MAO_MS) {
       estado.pinching = false
-      estado.inicio = null
-      estado.historico.length = 0
     }
     return null
   }
@@ -88,78 +71,25 @@ export function atualizarGesto(estado, hand, agora, aspecto = 1) {
   const escala = escalaMao(hand)
   if (escala === 0) return null
 
-  // Outra mão (ou outra pessoa): o início antigo não vale mais.
+  // Outra mão (ou outra pessoa): não conta como pinça nova até soltar.
   if (estado.escala && Math.abs(escala - estado.escala) / estado.escala > TROCA_MAO) {
-    estado.pinching = false
-    estado.inicio = null
-    estado.historico.length = 0
+    estado.pinching = true
   }
   estado.escala = escala
 
   const razao = distancia(hand[POLEGAR], hand[INDICADOR]) / escala
-  const ponto = { x: hand[INDICADOR].x, y: hand[INDICADOR].y }
-
-  estado.historico.push({ ...ponto, razao, t: agora })
-  while (estado.historico.length && agora - estado.historico[0].t > HISTORICO_MS) {
-    estado.historico.shift()
-  }
 
   if (!estado.pinching) {
     if (razao >= PINCA_ATIVA) return null
-
     estado.pinching = true
-    estado.consumido = false
-    estado.inicioEm = agora
-
-    // Retroage o início até onde os dedos começaram a se fechar, mas só se a
-    // mão estava parada — senão inventaria movimento anterior à pinça.
-    const formando = estado.historico.find(
-      amostra => amostra.razao < PINCA_FORMANDO && distancia(amostra, ponto) < MARGEM_GESTO * 1.5
-    )
-
-    estado.inicio = formando ? { x: formando.x, y: formando.y } : ponto
-
-    // No modo quadrantes a direção vem da posição da pinça, não do arrasto.
-    if (estado.modo === 'quadrantes') {
-      if (agora < estado.cooldownAte) return null
-
-      const direcao = quadranteDoPonto(ponto, aspecto)
-      if (!direcao) return null
-
-      estado.consumido = true
-      estado.cooldownAte = agora + COOLDOWN_MS
-      return direcao
-    }
-
-    return null
+    return quadranteDoPonto(hand[INDICADOR], aspecto)
   }
 
   if (razao > PINCA_SOLTA) {
     estado.pinching = false
-    estado.inicio = null
-    return null
   }
 
-  if (estado.modo === 'quadrantes') return null
-
-  if (estado.consumido || agora < estado.cooldownAte) return null
-
-  // Pinça esquecida: reancora para não disparar com um delta velho.
-  if (agora - estado.inicioEm > PINCA_MAXIMA_MS) {
-    estado.inicio = ponto
-    estado.inicioEm = agora
-    return null
-  }
-
-  const dx = ponto.x - estado.inicio.x
-  const dy = (ponto.y - estado.inicio.y) / aspecto
-
-  if (Math.abs(dx) < MARGEM_GESTO && Math.abs(dy) < MARGEM_GESTO) return null
-
-  estado.consumido = true
-  estado.cooldownAte = agora + COOLDOWN_MS
-
-  return direcaoDoDelta(dx, dy)
+  return null
 }
 
 export function criarPausa() {

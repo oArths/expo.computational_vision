@@ -41,14 +41,7 @@ const telas = {
   jogo: $('screen-game')
 }
 
-const gesto = criarGesto(
-  new URLSearchParams(location.search).get('gesto') === 'quadrantes'
-    ? 'quadrantes'
-    : 'arrasto'
-)
-
-if (gesto.modo === 'quadrantes') document.body.classList.add('gesto-quadrantes')
-
+const gesto = criarGesto()
 const zonasCamera = [...document.querySelectorAll('.camera-zonas span')]
 const pausa = criarPausa()
 
@@ -129,7 +122,7 @@ function iniciarDesafio() {
   esconderModal(startModal)
   reinicioAutomatico = null
   rodando = true
-  Object.assign(gesto, criarGesto(gesto.modo))
+  Object.assign(gesto, criarGesto())
   pausa.desde = null
   pausa.armada = true
 
@@ -240,12 +233,11 @@ async function iniciarRastreamento() {
         desenharOverlay(overlay, {
           hands,
           primaria,
-          pinching: gesto.pinching,
-          inicio: gesto.inicio
+          pinching: gesto.pinching
         })
 
         const zonaAtiva =
-          gesto.modo === 'quadrantes' && primaria >= 0
+          primaria >= 0
             ? quadranteDoPonto(
                 hands[primaria][8],
                 video.videoWidth / video.videoHeight || 1

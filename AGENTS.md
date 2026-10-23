@@ -22,13 +22,11 @@
 ## Gestos
 
 - Pinça: `dist(landmark 8, landmark 4) / dist(landmark 0, landmark 9)`, ativa em 0.25 e solta em 0.35 (histerese).
-- A direção dispara **durante o arrasto**, quando o deslocamento passa de `MARGEM_GESTO` (0.04); a soltura não é necessária. Cada pinça conta no máximo um movimento (`consumido`), então a soltura pode até ser perdida.
-- O início é retroagido até 200 ms (só se a mão estava parada) para pegar a pinça rápida; pinça parada por mais de 2,5 s é reancorada.
-- `y` é dividido pelo aspecto do vídeo para os dois eixos pesarem igual em pixels; o eixo dominante sempre vence (sem zona morta diagonal).
-- Cooldown de 300 ms; mão ausente por mais de 250 ms zera o gesto, e escala da mão mudando mais de 25% (outra mão) também.
-- Modo alternativo `?gesto=quadrantes`: a direção é o lado da câmera onde a pinça acontece (`quadranteDoPonto`, área morta de 12% no centro), disparada no início da pinça. As metades ativas são destacadas em `.camera-zonas` (não espelhadas, ao contrário do vídeo).
+- A direção é o lado da câmera onde a pinça começa (`quadranteDoPonto`): direita, esquerda, cima ou baixo. Área morta de 12% no centro; dispara no início da pinça e segurar não repete.
+- `y` é dividido pelo aspecto do vídeo para os dois eixos pesarem igual em pixels; o eixo dominante vence.
+- Mão ausente por mais de 250 ms zera a pinça; escala da mão mudando mais de 25% (outra mão) também, sem disparar no frame da troca.
+- As metades ativas são destacadas em `.camera-zonas`, que **não** são espelhadas (o vídeo é).
 - `npm run check:gesto` cobre esses casos; rode ao mexer nos limiares.
-- A tela é espelhada por CSS, então mover a mão para a direita diminui o `x` da imagem. Não "corrigir" isso sem testar os 4 sentidos.
 - Pausa: duas mãos acima do centro e com punhos próximos por 1 s. `numHands: 2`; a mão maior controla o movimento.
 
 ## Tempo e score

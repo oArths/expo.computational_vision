@@ -652,16 +652,12 @@ td.wall.corner-br { border-bottom-right-radius: 10px; }
   min-height: 20px;
 }
 
-/* Modo quadrantes: mostra onde pinçar sem cobrir o vídeo. */
+/* Quadrantes do gesto: mostra onde pinçar sem cobrir o vídeo. */
 .camera-zonas {
   position: absolute;
   inset: 0;
-  display: none;
-  pointer-events: none;
-}
-
-body.gesto-quadrantes .camera-zonas {
   display: block;
+  pointer-events: none;
 }
 
 .camera-zonas::before {
