@@ -120,9 +120,7 @@ function iniciarDesafio() {
   esconderModal(startModal)
   reinicioAutomatico = null
   rodando = true
-  gesto.pinching = false
-  gesto.inicio = null
-  gesto.cooldownAte = 0
+  Object.assign(gesto, criarGesto())
   pausa.desde = null
   pausa.armada = true
 
@@ -237,8 +235,13 @@ async function iniciarRastreamento() {
           inicio: gesto.inicio
         })
 
-        if (rodando && primaria >= 0) {
-          const direcao = atualizarGesto(gesto, hands[primaria], agora)
+        if (rodando) {
+          const direcao = atualizarGesto(
+            gesto,
+            primaria >= 0 ? hands[primaria] : null,
+            agora,
+            video.videoWidth / video.videoHeight || 1
+          )
           if (direcao) jogo.mover(direcao)
         }
 

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "levels": "node tools/gen-levels.mjs",
+    "check:gesto": "node tools/check-gesto.mjs",
     "predev": "node tools/copy-wasm.mjs",
     "dev": "vite",
     "prebuild": "node tools/copy-wasm.mjs",

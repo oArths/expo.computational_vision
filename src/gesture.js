@@ -7,9 +7,13 @@ const BASE_INDICADOR = 9
 
 const PINCA_ATIVA = 0.25
 const PINCA_SOLTA = 0.35
-const MARGEM_GESTO = 0.06
-const DOMINANCIA = 1.3
+const PINCA_FORMANDO = 0.45
+const MARGEM_GESTO = 0.04
 const COOLDOWN_MS = 300
+const HISTORICO_MS = 200
+const PINCA_MAXIMA_MS = 2500
+const PERDA_MAO_MS = 250
+const TROCA_MAO = 0.25
 
 const PAUSA_PUNHOS = 0.8
 const PAUSA_ESPERA_MS = 1000
@@ -36,45 +40,99 @@ export function maoPrincipal(hands) {
 }
 
 export function criarGesto() {
-  return { pinching: false, inicio: null, cooldownAte: 0 }
+  return {
+    pinching: false,
+    inicio: null,
+    inicioEm: 0,
+    consumido: false,
+    cooldownAte: 0,
+    escala: 0,
+    historico: [],
+    vistoEm: 0
+  }
 }
 
-// Retorna a direção quando a pinça é solta depois de um deslocamento válido.
-// A tela é espelhada, então mover a mão para a direita diminui o x da imagem.
-export function atualizarGesto(estado, hand, agora) {
-  const escala = escalaMao(hand)
-  if (escala === 0) return null
+function direcaoDoDelta(dx, dy) {
+  // A tela é espelhada, então mover a mão para a direita diminui o x da imagem.
+  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'RIGHT' : 'LEFT'
+  return dy < 0 ? 'TOP' : 'BOTTOM'
+}
 
-  const razao = distancia(hand[POLEGAR], hand[INDICADOR]) / escala
-
-  if (!estado.pinching && razao < PINCA_ATIVA) {
-    estado.pinching = true
-    estado.inicio = { x: hand[INDICADOR].x, y: hand[INDICADOR].y }
+// Dispara assim que a mão pinçada se desloca, sem esperar a soltura.
+// `aspecto` (largura/altura) iguala o peso dos dois eixos em pixels.
+export function atualizarGesto(estado, hand, agora, aspecto = 1) {
+  if (!hand) {
+    // O detector perde a mão de vez em quando; só zera se ela sumir de verdade.
+    if (estado.pinching && agora - estado.vistoEm > PERDA_MAO_MS) {
+      estado.pinching = false
+      estado.inicio = null
+      estado.historico.length = 0
+    }
     return null
   }
 
-  if (estado.pinching && razao > PINCA_SOLTA) {
+  estado.vistoEm = agora
+
+  const escala = escalaMao(hand)
+  if (escala === 0) return null
+
+  // Outra mão (ou outra pessoa): o início antigo não vale mais.
+  if (estado.escala && Math.abs(escala - estado.escala) / estado.escala > TROCA_MAO) {
     estado.pinching = false
-    const inicio = estado.inicio
     estado.inicio = null
-    if (!inicio || agora < estado.cooldownAte) return null
+    estado.historico.length = 0
+  }
+  estado.escala = escala
 
-    const dx = hand[INDICADOR].x - inicio.x
-    const dy = hand[INDICADOR].y - inicio.y
+  const razao = distancia(hand[POLEGAR], hand[INDICADOR]) / escala
+  const ponto = { x: hand[INDICADOR].x, y: hand[INDICADOR].y }
 
-    if (Math.abs(dx) < MARGEM_GESTO && Math.abs(dy) < MARGEM_GESTO) return null
-
-    let direcao = null
-
-    if (Math.abs(dx) > Math.abs(dy) * DOMINANCIA) direcao = dx < 0 ? 'RIGHT' : 'LEFT'
-    else if (Math.abs(dy) > Math.abs(dx) * DOMINANCIA) direcao = dy < 0 ? 'TOP' : 'BOTTOM'
-
-    if (direcao) estado.cooldownAte = agora + COOLDOWN_MS
-
-    return direcao
+  estado.historico.push({ ...ponto, razao, t: agora })
+  while (estado.historico.length && agora - estado.historico[0].t > HISTORICO_MS) {
+    estado.historico.shift()
   }
 
-  return null
+  if (!estado.pinching) {
+    if (razao >= PINCA_ATIVA) return null
+
+    estado.pinching = true
+    estado.consumido = false
+    estado.inicioEm = agora
+
+    // Retroage o início até onde os dedos começaram a se fechar, mas só se a
+    // mão estava parada — senão inventaria movimento anterior à pinça.
+    const formando = estado.historico.find(
+      amostra => amostra.razao < PINCA_FORMANDO && distancia(amostra, ponto) < MARGEM_GESTO * 1.5
+    )
+
+    estado.inicio = formando ? { x: formando.x, y: formando.y } : ponto
+    return null
+  }
+
+  if (razao > PINCA_SOLTA) {
+    estado.pinching = false
+    estado.inicio = null
+    return null
+  }
+
+  if (estado.consumido || agora < estado.cooldownAte) return null
+
+  // Pinça esquecida: reancora para não disparar com um delta velho.
+  if (agora - estado.inicioEm > PINCA_MAXIMA_MS) {
+    estado.inicio = ponto
+    estado.inicioEm = agora
+    return null
+  }
+
+  const dx = ponto.x - estado.inicio.x
+  const dy = (ponto.y - estado.inicio.y) / aspecto
+
+  if (Math.abs(dx) < MARGEM_GESTO && Math.abs(dy) < MARGEM_GESTO) return null
+
+  estado.consumido = true
+  estado.cooldownAte = agora + COOLDOWN_MS
+
+  return direcaoDoDelta(dx, dy)
 }
 
 export function criarPausa() {
