@@ -1,13 +1,20 @@
-// Gesto de pontas dos dedos juntas, direção por quadrante e pose de pausa.
+// Gesto de indicador levantado (resto da mão fechada), direção por quadrante e pausa.
 
 const PULSO = 0
 const BASE_INDICADOR = 9
 
-// Pontas dos quatro dedos (sem o polegar).
-const PONTAS = [8, 12, 16, 20]
+// Ponta e articulação do meio dos outros três dedos.
+const OUTROS = [
+  [12, 10],
+  [16, 14],
+  [20, 18]
+]
 
-const PONTAS_JUNTAS = 0.35
-const PONTAS_SOLTAS = 0.55
+const INDICADOR_ATIVA = 1.2
+const OUTROS_ATIVA = 0.85
+const INDICADOR_SOLTA = 1.05
+const OUTROS_SOLTA = 1
+
 const ZONA_MORTA = 0.12
 const PERDA_MAO_MS = 250
 const TROCA_MAO = 0.25
@@ -37,29 +44,13 @@ export function maoPrincipal(hands) {
 }
 
 export function criarGesto() {
-  return { juntas: false, escala: 0, vistoEm: 0 }
+  return { apontando: false, escala: 0, vistoEm: 0 }
 }
 
-// O quanto as pontas estão espalhadas em volta do próprio centro, relativo ao
-// tamanho da mão. Vale para a mão em qualquer rotação e em qualquer distância.
-function espalhamentoDasPontas(hand, escala) {
-  let cx = 0
-  let cy = 0
-
-  for (const ponta of PONTAS) {
-    cx += hand[ponta].x
-    cy += hand[ponta].y
-  }
-
-  cx /= PONTAS.length
-  cy /= PONTAS.length
-
-  let maior = 0
-  for (const ponta of PONTAS) {
-    maior = Math.max(maior, Math.hypot(hand[ponta].x - cx, hand[ponta].y - cy))
-  }
-
-  return maior / escala
+// Razão entre a distância ponta→pulso e articulação→pulso. Dedo esticado fica
+// acima de 1, dedo dobrado fica abaixo — vale em qualquer rotação e distância.
+function razaoDedo(hand, ponta, articulacao) {
+  return distancia(hand[ponta], hand[PULSO]) / distancia(hand[articulacao], hand[PULSO])
 }
 
 function direcaoDoLado(dx, dy) {
@@ -68,7 +59,7 @@ function direcaoDoLado(dx, dy) {
   return dy < 0 ? 'TOP' : 'BOTTOM'
 }
 
-// A direção é o lado da câmera onde as pontas se juntaram.
+// A direção é o lado da câmera onde a mão está.
 export function quadranteDoPonto(ponto, aspecto = 1) {
   const dx = ponto.x - 0.5
   const dy = (ponto.y - 0.5) / aspecto
@@ -78,18 +69,18 @@ export function quadranteDoPonto(ponto, aspecto = 1) {
   return direcaoDoLado(dx, dy)
 }
 
-// Posição da palma, não das pontas: não muda ao juntar os dedos.
+// Posição da palma: não muda conforme os dedos abrem ou fecham.
 export function quadranteDaMao(hand, aspecto = 1) {
   return quadranteDoPonto(hand[BASE_INDICADOR], aspecto)
 }
 
-// Dispara uma direção por gesto, no momento em que as pontas se encontram.
+// Dispara uma direção por gesto, no momento em que o indicador sobe com a mão fechada.
 // `aspecto` (largura/altura) iguala o peso dos dois eixos em pixels.
 export function atualizarGesto(estado, hand, agora, aspecto = 1) {
   if (!hand) {
     // O detector perde a mão de vez em quando; só zera se ela sumir de verdade.
-    if (estado.juntas && agora - estado.vistoEm > PERDA_MAO_MS) {
-      estado.juntas = false
+    if (estado.apontando && agora - estado.vistoEm > PERDA_MAO_MS) {
+      estado.apontando = false
     }
     return null
   }
@@ -101,20 +92,25 @@ export function atualizarGesto(estado, hand, agora, aspecto = 1) {
 
   // Outra mão (ou outra pessoa): não conta como gesto novo até soltar.
   if (estado.escala && Math.abs(escala - estado.escala) / estado.escala > TROCA_MAO) {
-    estado.juntas = true
+    estado.apontando = true
   }
   estado.escala = escala
 
-  const espalhamento = espalhamentoDasPontas(hand, escala)
+  const indicador = razaoDedo(hand, 8, 6)
+  const outros = OUTROS.map(([ponta, articulacao]) => razaoDedo(hand, ponta, articulacao))
 
-  if (!estado.juntas) {
-    if (espalhamento > PONTAS_JUNTAS) return null
-    estado.juntas = true
+  if (!estado.apontando) {
+    const levantado = indicador > INDICADOR_ATIVA
+    const fechados = outros.every(razao => razao < OUTROS_ATIVA)
+
+    if (!levantado || !fechados) return null
+
+    estado.apontando = true
     return quadranteDaMao(hand, aspecto)
   }
 
-  if (espalhamento > PONTAS_SOLTAS) {
-    estado.juntas = false
+  if (indicador < INDICADOR_SOLTA || outros.some(razao => razao > OUTROS_SOLTA)) {
+    estado.apontando = false
   }
 
   return null

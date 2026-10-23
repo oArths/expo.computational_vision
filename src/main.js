@@ -236,7 +236,7 @@ async function iniciarRastreamento() {
         desenharOverlay(overlay, {
           hands,
           primaria,
-          juntas: gesto.juntas
+          apontando: gesto.apontando
         })
 
         const zonaAtiva =

@@ -33,10 +33,10 @@ concluído.
 
 ## Como jogar
 
-- **Mover:** junte as pontas dos quatro dedos (sem o polegar) no lado da câmera
-  que corresponde à direção (direita, esquerda, cima ou baixo). O centro é área
-  morta e a metade ativa fica destacada no vídeo. Cada gesto vale um movimento, e
-  o jogador desliza até bater numa parede.
+- **Mover:** levante só o indicador, com os outros três dedos fechados, no lado
+  da câmera que corresponde à direção (direita, esquerda, cima ou baixo). O centro
+  é área morta e a metade ativa fica destacada no vídeo. Cada gesto vale um
+  movimento, e o jogador desliza até bater numa parede.
 - **Pausar/despausar:** levante as duas mãos, próximas e acima do centro, por 1 s.
 - **Borda azul:** a mão está sendo rastreada.
 - O cronômetro pausa junto e não conta no tempo total.
@@ -107,5 +107,5 @@ public/models/              modelo do MediaPipe
 
 - Só funciona com HTTPS ou `localhost` (exigência de `getUserMedia`).
 - Sem autenticação no ranking; inserções podem ser forjadas.
-- O limiar das pontas juntas (`PONTAS_JUNTAS` 0.35 / `PONTAS_SOLTAS` 0.55) e o
-  tempo da pausa (1 s) precisam de calibração com a câmera e a iluminação do local.
+- Os limiares do indicador (1.2 / 1.05) e dos outros dedos (0.85 / 1.0) e o tempo
+  da pausa (1 s) precisam de calibração com a câmera e a iluminação do local.

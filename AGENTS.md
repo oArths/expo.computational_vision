@@ -21,8 +21,8 @@
 
 ## Gestos
 
-- Gesto: **pontas dos quatro dedos juntas** (o polegar não entra). Mede-se o espalhamento das pontas em volta do próprio centro, dividido por `escalaMao`: ativa abaixo de 0.35, solta acima de 0.55 (histerese). É invariante a rotação e distância da mão.
-- A direção é o lado da câmera onde as pontas se juntam (`quadranteDaMao`, posição da palma — landmark 9 —, que não muda com os dedos): direita, esquerda, cima ou baixo. Área morta de 12% no centro; repetir só conta depois de abrir.
+- Gesto: **só o indicador levantado, resto da mão fechado**. Dedo esticado = `dist(ponta, pulso) > dist(articulação do meio, pulso)`; o índice precisa passar de 1.2 e os outros três ficarem abaixo de 0.85. Solta quando o índice cai abaixo de 1.05 ou outro dedo passa de 1.0 (histerese). Vale em qualquer rotação e distância da mão.
+- A direção é o lado da câmera onde a mão está (`quadranteDaMao`, posição da palma — landmark 9 —, que não muda com os dedos): direita, esquerda, cima ou baixo. Área morta de 12% no centro; repetir só conta depois de abaixar o dedo.
 - `y` é dividido pelo aspecto do vídeo para os dois eixos pesarem igual em pixels; o eixo dominante vence.
 - Mão ausente por mais de 250 ms zera o gesto; escala da mão mudando mais de 25% (outra mão) também, sem disparar no frame da troca.
 - As metades ativas são destacadas em `.camera-zonas`, que **não** são espelhadas (o vídeo é).
