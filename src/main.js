@@ -7,7 +7,7 @@ import {
   criarGesto,
   criarPausa,
   maoPrincipal,
-  quadranteDoPonto
+  quadranteDaMao
 } from './gesture.js'
 import { abrirCamera, criarDetector, iniciarLoop } from './hands.js'
 import { desenharOverlay, redimensionarOverlay } from './overlay.js'
@@ -236,13 +236,13 @@ async function iniciarRastreamento() {
         desenharOverlay(overlay, {
           hands,
           primaria,
-          pinching: gesto.pinching
+          fechada: gesto.fechada
         })
 
         const zonaAtiva =
           primaria >= 0
-            ? quadranteDoPonto(
-                hands[primaria][8],
+            ? quadranteDaMao(
+                hands[primaria],
                 video.videoWidth / video.videoHeight || 1
               )
             : null

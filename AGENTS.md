@@ -21,10 +21,10 @@
 
 ## Gestos
 
-- Pinça: `dist(landmark 8, landmark 4) / dist(landmark 0, landmark 9)`, ativa em 0.25 e solta em 0.35 (histerese).
-- A direção é o lado da câmera onde a pinça começa (`quadranteDoPonto`): direita, esquerda, cima ou baixo. Área morta de 12% no centro; dispara no início da pinça e segurar não repete.
+- Gesto: **mão fechada**. Um dedo conta como curvado quando a ponta fica mais perto do pulso que a articulação do meio (`CURL` 0.9). Ativa com os 4 curvados e só solta com 2 ou menos (histerese); o polegar não entra na conta.
+- A direção é o lado da câmera onde a mão fecha (`quadranteDaMao`, posição da palma — landmark 9 —, que não muda ao fechar): direita, esquerda, cima ou baixo. Área morta de 12% no centro; fechar de novo só conta depois de abrir.
 - `y` é dividido pelo aspecto do vídeo para os dois eixos pesarem igual em pixels; o eixo dominante vence.
-- Mão ausente por mais de 250 ms zera a pinça; escala da mão mudando mais de 25% (outra mão) também, sem disparar no frame da troca.
+- Mão ausente por mais de 250 ms zera a fechada; escala da mão mudando mais de 25% (outra mão) também, sem disparar no frame da troca.
 - As metades ativas são destacadas em `.camera-zonas`, que **não** são espelhadas (o vídeo é).
 - `npm run check:gesto` cobre esses casos; rode ao mexer nos limiares.
 - Pausa: duas mãos acima do centro e com punhos próximos por 1 s. `numHands: 2`; a mão maior controla o movimento.

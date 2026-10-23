@@ -13,7 +13,7 @@ export function redimensionarOverlay(canvas, video) {
   canvas.height = video.videoHeight
 }
 
-export function desenharOverlay(canvas, { hands, primaria, pinching }) {
+export function desenharOverlay(canvas, { hands, primaria, fechada }) {
   const ctx = canvas.getContext('2d')
   const { width, height } = canvas
 
@@ -48,8 +48,8 @@ export function desenharOverlay(canvas, { hands, primaria, pinching }) {
 
     const dedo = ponto(hand[PONTA_INDICADOR])
     ctx.beginPath()
-    ctx.arc(dedo.x, dedo.y, pinching ? 14 : 9, 0, Math.PI * 2)
-    ctx.fillStyle = pinching ? '#4facfe' : '#e53e3e'
+    ctx.arc(dedo.x, dedo.y, fechada ? 14 : 9, 0, Math.PI * 2)
+    ctx.fillStyle = fechada ? '#4facfe' : '#e53e3e'
     ctx.fill()
   })
 }

@@ -1,12 +1,19 @@
-// Detecção do gesto de pinça (indicador + polegar), direção por quadrante e pose de pausa.
+// Gesto de mão fechada, direção por quadrante e pose de pausa.
 
-const POLEGAR = 4
-const INDICADOR = 8
 const PULSO = 0
 const BASE_INDICADOR = 9
 
-const PINCA_ATIVA = 0.25
-const PINCA_SOLTA = 0.35
+// Ponta e articulação de cada dedo (sem o polegar).
+const DEDOS = [
+  [8, 6],
+  [12, 10],
+  [16, 14],
+  [20, 18]
+]
+
+const CURL = 0.9
+const FECHADA_ATIVA = 4
+const FECHADA_SOLTA = 2
 const ZONA_MORTA = 0.12
 const PERDA_MAO_MS = 250
 const TROCA_MAO = 0.25
@@ -19,7 +26,7 @@ function distancia(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y)
 }
 
-// Tamanho da mão em coordenadas normalizadas: normaliza a pinça e compara mãos.
+// Tamanho da mão em coordenadas normalizadas: normaliza as medidas e compara mãos.
 export function escalaMao(hand) {
   return distancia(hand[PULSO], hand[BASE_INDICADOR])
 }
@@ -36,7 +43,21 @@ export function maoPrincipal(hands) {
 }
 
 export function criarGesto() {
-  return { pinching: false, escala: 0, vistoEm: 0 }
+  return { fechada: false, escala: 0, vistoEm: 0 }
+}
+
+// Dedo curvado = ponta mais perto do pulso que a articulação do meio.
+// Funciona com a mão em qualquer rotação e não depende do tamanho da mão.
+function dedosCurvados(hand) {
+  let total = 0
+
+  for (const [ponta, articulacao] of DEDOS) {
+    if (distancia(hand[ponta], hand[PULSO]) < distancia(hand[articulacao], hand[PULSO]) * CURL) {
+      total += 1
+    }
+  }
+
+  return total
 }
 
 function direcaoDoLado(dx, dy) {
@@ -45,7 +66,7 @@ function direcaoDoLado(dx, dy) {
   return dy < 0 ? 'TOP' : 'BOTTOM'
 }
 
-// A direção é o lado da câmera onde a pinça foi feita.
+// A direção é o lado da câmera onde a mão fechou.
 export function quadranteDoPonto(ponto, aspecto = 1) {
   const dx = ponto.x - 0.5
   const dy = (ponto.y - 0.5) / aspecto
@@ -55,13 +76,18 @@ export function quadranteDoPonto(ponto, aspecto = 1) {
   return direcaoDoLado(dx, dy)
 }
 
-// Dispara uma direção por pinça, no momento em que os dedos se fecham.
+// Posição da palma, não da ponta do dedo: não muda ao fechar a mão.
+export function quadranteDaMao(hand, aspecto = 1) {
+  return quadranteDoPonto(hand[BASE_INDICADOR], aspecto)
+}
+
+// Dispara uma direção por fechada de mão, no momento em que os dedos se curvam.
 // `aspecto` (largura/altura) iguala o peso dos dois eixos em pixels.
 export function atualizarGesto(estado, hand, agora, aspecto = 1) {
   if (!hand) {
     // O detector perde a mão de vez em quando; só zera se ela sumir de verdade.
-    if (estado.pinching && agora - estado.vistoEm > PERDA_MAO_MS) {
-      estado.pinching = false
+    if (estado.fechada && agora - estado.vistoEm > PERDA_MAO_MS) {
+      estado.fechada = false
     }
     return null
   }
@@ -71,22 +97,22 @@ export function atualizarGesto(estado, hand, agora, aspecto = 1) {
   const escala = escalaMao(hand)
   if (escala === 0) return null
 
-  // Outra mão (ou outra pessoa): não conta como pinça nova até soltar.
+  // Outra mão (ou outra pessoa): não conta como fechada nova até abrir.
   if (estado.escala && Math.abs(escala - estado.escala) / estado.escala > TROCA_MAO) {
-    estado.pinching = true
+    estado.fechada = true
   }
   estado.escala = escala
 
-  const razao = distancia(hand[POLEGAR], hand[INDICADOR]) / escala
+  const curvados = dedosCurvados(hand)
 
-  if (!estado.pinching) {
-    if (razao >= PINCA_ATIVA) return null
-    estado.pinching = true
-    return quadranteDoPonto(hand[INDICADOR], aspecto)
+  if (!estado.fechada) {
+    if (curvados < FECHADA_ATIVA) return null
+    estado.fechada = true
+    return quadranteDaMao(hand, aspecto)
   }
 
-  if (razao > PINCA_SOLTA) {
-    estado.pinching = false
+  if (curvados <= FECHADA_SOLTA) {
+    estado.fechada = false
   }
 
   return null
