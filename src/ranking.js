@@ -1,0 +1,45 @@
+import { createClient } from '@supabase/supabase-js'
+
+const url = import.meta.env.VITE_SUPABASE_URL
+const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+export const supabaseConfigurado = Boolean(url && key)
+const supabase = supabaseConfigurado ? createClient(url, key) : null
+
+// Menos movimentos e menos tempo = score maior. Só é enviado ao completar os 15 níveis.
+export function calcularScore(movimentos, segundos) {
+  return Math.round(1_000_000 / (1 + movimentos * Math.max(1, segundos)))
+}
+
+export async function enviarResultado({ nickname, segundos, score }) {
+  if (!supabase) return null
+
+  const { data, error } = await supabase
+    .from('Users')
+    .insert({ nickname, time: segundos, score })
+    .select('id')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function buscarRanking({ score, segundos }) {
+  if (!supabase) return { top: [], posicao: null }
+
+  const { data: top, error } = await supabase
+    .from('Users')
+    .select('nickname, score, time')
+    .order('score', { ascending: false })
+    .order('time', { ascending: true })
+    .limit(10)
+
+  if (error) throw error
+
+  const { count } = await supabase
+    .from('Users')
+    .select('id', { count: 'exact', head: true })
+    .or(`score.gt.${score},and(score.eq.${score},time.lt.${segundos})`)
+
+  return { top: top ?? [], posicao: (count ?? 0) + 1 }
+}

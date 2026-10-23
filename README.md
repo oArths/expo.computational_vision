@@ -1,95 +1,98 @@
 # Putt Party — Controle por Gestos
 
-Jogo de labirinto (HTML/CSS/JS) controlado pelo movimento da mão, com detecção
-feita **inteiramente no navegador** com MediaPipe Tasks Web.
+Jogo de labirinto com 15 níveis controlado por gestos da mão. A câmera e o
+MediaPipe rodam **no navegador**; o único serviço externo é o Supabase para o
+ranking.
 
-Este documento registra as decisões de arquitetura definidas para o projeto.
+## Rodar
 
-## Decisões
+```bash
+npm install
+npm run dev
+```
 
-### 1. Processamento no frontend
+Abrir o endereço que o Vite mostrar. A câmera só funciona em `localhost` ou HTTPS.
+`npm run dev` copia o wasm do MediaPipe para `public/wasm` antes de subir.
 
-- A webcam é capturada no navegador com `navigator.mediaDevices.getUserMedia`.
-- O MediaPipe (`HandLandmarker`, modelo `models/hand_landmarker.task`) roda no
-  próprio navegador.
-- **Motivo:** o vídeo nunca trafega pela rede, então a imagem mantida na tela tem
-  qualidade e fluidez totais, sem latência de ida e volta nem recompressão.
-- MediaPipe no backend exigiria enviar cada frame (JPEG), decodificar, processar e
-  devolver — pior qualidade e mais latência para o mesmo resultado.
+```bash
+npm run build     # gera dist/ para a Vercel
+npm run preview   # testa o build
+npm run levels    # regenera src/levels.json
+```
 
-### 2. Backend removido
+## Como jogar
 
-- O projeto é **100% estático**: HTML, CSS e JavaScript.
-- O `main.py` (Flask + `cv2.VideoCapture` + `cv2.imshow` + endpoint
-  `GET /movimento`) é removido, junto com as dependências Python de
-  MediaPipe/OpenCV.
-- Não há build, nem dependências de runtime além de CDNs.
+- **Mover:** junte a ponta do indicador com a do polegar, arraste e solte. O
+  deslocamento define a direção; um gesto move uma célula.
+- **Pausar/despausar:** levante as duas mãos, próximas e acima do centro, por 1 s.
+- **Borda azul:** a mão está sendo rastreada.
+- O cronômetro pausa junto e não conta no tempo total.
 
-### 3. Servidor estático local
+## Regras do jogo
 
-- O modelo `.task` precisa ser carregado por HTTP: abrir via `file://` faz o
-  navegador bloquear `fetch` de arquivos locais.
-- Execução:
+- 15 níveis pré-gerados: 5 fáceis (6x6 a 14x14), 5 médios (16x16 a 24x24) e
+  5 difíceis (26x26 a 34x34).
+- Os layouts são idênticos para todos (gerados com semente), para o ranking ser
+  justo.
+- Ao concluir os 15 níveis, o resultado é enviado ao ranking.
+- Score: `round(1_000_000 / (1 + movimentos × segundos))`. Menos movimentos e
+  menos tempo = maior score.
 
-  ```bash
-  python -m http.server 8000
-  ```
+## Ranking (Supabase)
 
-  Depois abrir <http://localhost:8000>.
+Copie `.env.example` para `.env.local` e preencha:
 
-- Alternativas aceitas: Live Server (VS Code) ou qualquer servidor estático
-  apontando para a raiz do repositório.
+```
+VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
 
-### 4. Feedback visual na tela
+Use apenas a **publishable key**. Nunca coloque a `service_role` no frontend.
+O RLS da tabela `Users` precisa permitir leitura e inserção:
 
-Mostrado em um `<canvas>` sobreposto ao vídeo:
+```sql
+alter table public."Users" enable row level security;
 
-- **Quadrado central de referência** (verde): área onde a pessoa deve posicionar
-  o dedo para iniciar o movimento.
-- **Ponto vermelho no dedo indicador** (landmark de índice 8).
-- **Landmarks da mão** (conexões em verde) para orientação.
-- Vídeo **espelhado** (`translate` + `scale(-1, 1)` no canvas), como era feito com
-  `cv2.flip(frame, 1)`, para o movimento parecer natural.
+create policy "leitura publica" on public."Users"
+  for select to anon using (true);
 
-### 5. Lógica de movimento
+create policy "insercao publica" on public."Users"
+  for insert to anon with check (
+    char_length(nickname) between 1 and 20
+    and score between 0 and 1000000
+    and time >= 0
+  );
+```
 
-Portada de `main.py` para o frontend, sem mudança de comportamento:
+Sem as policies o jogo funciona, mas mostra "Ranking desativado" e não envia o
+resultado. Não há autenticação: qualquer cliente pode inserir no ranking.
 
-- Constantes: `QUADRADO_TAMANHO = 200`, `MARGEM = 20`, `CONFIDENCE_DETECCAO = 0.7`,
-  `CONFIDENCE_RASTREAMENTO = 0.5`, `MAX_FRAMES_PERDIDOS = 5`.
-- `apto()` — verifica se o dedo está dentro do quadrado central.
-- `movimento()` — quando o dedo sai do quadrado, decide `LEFT`, `RIGHT`, `TOP`
-  ou `BOTTOM` pelo lado por onde saiu.
-- O comando é entregue ao `movePlayer()` existente, que anima o jogador com GSAP.
-- É preciso entrar e sair do quadrado para gerar um movimento (não move com o
-  dedo parado numa borda).
+### Vercel
 
-### 6. O que permanece
-
-- Labirinto: geração, paredes, colisão, jogador SVG, partículas e celebração
-  seguem como estão em `script.js` / `style.css`.
-- Controle por teclado (setas) continua funcionando.
-- GSAP 3 via CDN, carregado antes de `script.js`.
+Importe o repositório na Vercel (framework: Vite), defina as duas variáveis
+`VITE_*` no projeto e faça o deploy. O build sai de `dist/`.
 
 ## Estrutura
 
 ```
-index.html                 página do jogo + painel da câmera
-script.js                  labirinto + pipeline do MediaPipe
-style.css                  estilos do jogo e do painel da câmera
-models/hand_landmarker.task modelo do MediaPipe (servido por HTTP)
+index.html                  shell da página
+src/main.js                 câmera, loop de detecção, UI
+src/game.js                 níveis, movimentos, tempo, score
+src/gesture.js              pinça, direções, pausa
+src/hands.js                MediaPipe + getUserMedia
+src/overlay.js              desenho dos landmarks
+src/ranking.js              Supabase
+src/maze/model.js           geração pura do labirinto
+src/maze/view.js            renderização da tabela e do jogador
+src/levels.json             níveis pré-gerados
+tools/gen-levels.mjs        gera os níveis
+tools/copy-wasm.mjs         copia o wasm do MediaPipe
+public/models/              modelo do MediaPipe
 ```
-
-## Verificação
-
-```bash
-node --check script.js
-```
-
-Depois servir a raiz por HTTP e testar no navegador com a webcam liberada.
 
 ## Limitações conhecidas
 
-- Exige navegador com suporte a `getUserMedia` e WebGL/WASM, e acesso à webcam.
-- Só há detecção com o servidor estático ativo; `file://` não funciona.
-- Sem servidor, não há persistência de pontuação entre dispositivos ou sessões.
+- Só funciona com HTTPS ou `localhost` (exigência de `getUserMedia`).
+- Sem autenticação no ranking; inserções podem ser forjadas.
+- Os limiares da pinça (0.25/0.35) e da pausa (1 s) precisam de calibração com a
+  câmera e a iluminação do local.

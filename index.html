@@ -4,45 +4,83 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Putt Party — Mini Golf</title>
-    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <div id="tracker-ring" aria-hidden="true"></div>
+
     <section class="section">
-      <div>
+      <header class="game-header">
         <h1>Putt Party</h1>
 
         <div class="info">
+          <p>Nível: <span id="level">1/15</span> <small id="difficulty">facil</small></p>
           <p>Movimentos: <span id="moves">0</span></p>
           <p>Tempo: <span id="time">0</span>s</p>
         </div>
-      </div>
+      </header>
 
-      <div id="maze-container">
-        <table id="maze"></table>
-        <svg id="player-trail" aria-hidden="true"></svg>
-        <svg id="player-token" viewBox="0 0 100 100" aria-hidden="true">
-          <circle cx="50" cy="50" r="46" fill="var(--color-accent-red, #e53e3e)" />
-        </svg>
+      <div class="stage">
+        <div id="maze-container">
+          <table id="maze"></table>
+          <svg id="player-trail" aria-hidden="true"></svg>
+          <svg id="player-token" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="46" fill="var(--color-accent-red, #e53e3e)" />
+          </svg>
+        </div>
+
+        <aside class="camera-panel">
+          <div class="camera-frame">
+            <video id="camera-feed" autoplay muted playsinline></video>
+            <canvas id="camera-overlay"></canvas>
+          </div>
+          <p id="camera-status">Iniciando câmera...</p>
+        </aside>
       </div>
 
       <div class="section-control">
-
         <div class="restart-container">
           <button id="restart" aria-label="Reiniciar jogo">Reiniciar</button>
         </div>
       </div>
     </section>
 
-    <!-- Celebration screen -->
-    <div id="celebration">
-      <h2>NICE!</h2>
-      <p>Você completou o buraco em <span id="celebration-moves">0</span> movimentos e <span id="celebration-time">0</span>s!</p>
-      <div class="restart-container">
-        <button id="celebration-restart" aria-label="Jogar novamente">Jogar novamente</button>
+    <div id="pause-overlay" role="status">
+      <h2>PAUSADO</h2>
+      <p>Levante as duas mãos para continuar</p>
+      <div class="pause-bar"><div id="pause-progress"></div></div>
+    </div>
+
+    <div id="start-modal" class="modal">
+      <div class="modal-card">
+        <h2>Putt Party</h2>
+        <p>Junte o indicador ao polegar, arraste e solte para mover o jogador. 15 níveis.</p>
+        <label for="nickname">Seu nome</label>
+        <input id="nickname" maxlength="20" autocomplete="off" placeholder="até 20 caracteres" />
+        <button id="start-button">Começar</button>
+      </div>
+    </div>
+
+    <div id="result-modal" class="modal">
+      <div class="modal-card">
+        <h2>Desafio completo</h2>
+        <p class="result-line">Movimentos: <strong id="result-moves">0</strong></p>
+        <p class="result-line">Tempo: <strong id="result-time">0</strong>s</p>
+        <p class="result-line">Score: <strong id="result-score">0</strong></p>
+        <p class="result-line">Posição: <strong id="result-position">-</strong></p>
+
+        <table class="rank">
+          <thead>
+            <tr><th>#</th><th>Nome</th><th>Score</th><th>Tempo</th></tr>
+          </thead>
+          <tbody id="result-body"></tbody>
+        </table>
+
+        <p id="result-status"></p>
+        <button id="result-restart">Jogar novamente</button>
       </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
-    <script src="script.js"></script>
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>

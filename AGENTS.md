@@ -2,36 +2,44 @@
 
 ## Estrutura e execução
 
-- Este é um projeto estático em HTML, CSS e JavaScript; não há `package.json` nem etapa de build. A única dependência é o GSAP 3 via CDN (`https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js`).
-- O entrypoint é `index.html`, que carrega `style.css`, o CDN do GSAP e `script.js` (nesta ordem); abra o arquivo diretamente no navegador para testar a interface.
-- O jogo é inicializado no callback `DOMContentLoaded` de `script.js`; a geração do labirinto e os controles ficam no mesmo arquivo.
-- A verificação sintática disponível é `node --check script.js`; não há suíte de testes automatizados configurada.
+- Projeto Vite + JavaScript puro (sem framework). `npm run dev` sobe o app; `npm run build` gera `dist/`.
+- `npm run dev` e `npm run build` copiam o wasm do MediaPipe de `node_modules` para `public/wasm` via `tools/copy-wasm.mjs`.
+- O entrypoint é `index.html`, que carrega o GSAP por CDN e `src/main.js` como módulo. O CSS é importado por `src/main.js`.
+- `src/main.js` liga câmera, MediaPipe, gestos, UI e ranking. `src/game.js` cuida de nível, movimentos, tempo e score.
+- Sem suíte de testes. Verificação: `npm run build` e abrir o app.
+- `src/levels.json` é gerado por `npm run levels`; não editar à mão.
 
 ## Labirinto
 
-- `rows` e `cols` em `script.js` controlam a dimensão do grid; o algoritmo de backtracking usa passos de 2 células e funciona melhor com dimensões pares.
-- O perímetro usa a classe `boundary` e é representado visualmente pela moldura de `#maze-container`; células `boundary` não podem ser jogadas.
-- `startPosition` e `goalPosition` ficam uma célula para dentro do perímetro; alterações na dimensão devem manter essa margem e a rotina `ensureGoalAccess()`.
-- A ordem de regeneração é `createMaze()` → `generateMaze()` → `ensureGoalAccess()` → `orientBorderWalls()` → `removeDoubleWalls()` → `removeDoublePaths()` → `styleWalls()`; preserve essa ordem ao alterar a geometria.
-- `removeDoubleWalls()` evita blocos 2×2 de paredes; `orientBorderWalls()` garante que paredes ligadas à moldura comecem perpendicularmente a ela; `removeDoublePaths()` evita corredores 2×2 sem bloquear a solução.
+- Os 15 níveis são pré-gerados com `mulberry32(seed)` em `src/maze/model.js` e commitados em `src/levels.json`. O layout precisa ser idêntico para todos (ranking justo) — não trocar para geração aleatória em runtime.
+- Dimensões pares (backtracking anda 2 células). Nível 1 é 6x6; 3x3 não é labirinto válido.
+- A ordem de geração é `createGrid` → `generateMaze` → `ensureGoalAccess` → `orientBorderWalls` → `removeDoubleWalls` → `removeDoublePaths` → `removeDeadEnds`; preserve-a ao mexer na geometria.
+- `src/maze/view.js` só renderiza; nenhuma lógica de jogo deve ir para lá.
+- Cada gesto move exatamente uma célula (`src/game.js`), não desliza até a parede.
 
-### Regras de criação
+## Gestos
 
-- `createMaze()` recria a tabela inteira: a borda recebe `boundary` e o interior começa como `wall`.
-- `generateMaze()` remove paredes usando backtracking recursivo; cada movimento de geração avança 2 células e abre a célula intermediária como `path`.
-- `ensureGoalAccess()` abre as células à esquerda e acima do objetivo para garantir acesso ao final.
-- `orientBorderWalls()` permite paredes na camada interna junto à moldura somente quando o segundo bloco continua para dentro; também separa entradas vizinhas para evitar linhas paralelas à borda.
-- `removeDoubleWalls()` encontra trechos paralelos de paredes sobrepostos e abre uma camada inteira do trecho duplicado, repetindo até a espessura máxima ser de uma célula.
-- `removeDoublePaths()` encontra blocos 2×2 de caminhos e tenta fechar uma célula; cada fechamento só é mantido se uma busca ainda encontrar o objetivo a partir do início.
-- `styleWalls()` calcula os vizinhos ortogonais de cada parede e aplica os cantos arredondados apenas nos lados livres; `boundary` conta como parede conectada.
-- O jogador visual é `#player-token`, separado da célula lógica; `updatePlayerToken()` calcula a posição, `setInitialPlayerTokenPosition()` posiciona no reset e `createMoveParticles()` gera partículas.
-- `#player-token` é um SVG de círculo vermelho simples animado por GSAP; o GSAP anima apenas `left/top` (nunca `x/y/scale/rotation`, para não sobrescrever o `translate(-50%, -50%)` de centralização). `#player-trail` é a camada SVG onde as partículas são criadas; o único efeito ao mover são as partículas. O CDN do GSAP deve ser carregado antes de `script.js`.
-- O movimento acontece em `movePlayer()`: emite partículas na célula de origem, atualiza `playerPosition` e anima o token até o centro da célula destino com um `gsap.to` curto (`power2.out`).
+- Pinça: `dist(landmark 8, landmark 4) / dist(landmark 0, landmark 9)`, ativa em 0.25 e solta em 0.35 (histerese).
+- A direção vem do delta entre ativar e soltar, com margem e eixo dominante; há cooldown de 300 ms.
+- A tela é espelhada por CSS, então mover a mão para a direita diminui o `x` da imagem. Não "corrigir" isso sem testar os 4 sentidos.
+- Pausa: duas mãos acima do centro e com punhos próximos por 1 s. `numHands: 2`; a mão maior controla o movimento.
+
+## Tempo e score
+
+- Tempo com `performance.now()`; pausa congela; `setInterval` não é usado para medir.
+- Score: `round(1_000_000 / (1 + movimentos × segundos))`, enviado somente ao concluir o nível 15.
+
+## Supabase
+
+- Cliente em `src/ranking.js` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` (`.env.local`, ignorado pelo git).
+- Nunca usar `service_role` no frontend.
+- A tabela `Users` exige RLS com policies de `select` e `insert` para `anon`; veja o README.
 
 ## Estilos
 
-- `--maze-cell-size` em `style.css` deve permanecer igual ao tamanho da moldura pseudo-elemento `#maze-container::after`, evitando paredes duplas na borda.
-- As divisórias entre células são intencionalmente removidas (`td { border: none; }`); a separação entre caminho e parede vem das cores e da forma.
+- `--maze-cell-size` é ajustado por JS em `src/game.js` conforme o tamanho do nível e da janela; a moldura `#maze-container::after` usa a mesma variável (evita parede dupla).
+- As divisórias entre células do labirinto continuam removidas; a tabela do ranking sobrescreve esses estilos.
+- `#player-token` é animado por GSAP apenas em `left`/`top` (nunca `x`/`y`/`scale`, para não sobrescrever o `translate(-50%, -50%)`).
 
 ## Commits
 
