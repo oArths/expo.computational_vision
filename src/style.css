@@ -404,6 +404,11 @@ td.wall.corner-br { border-bottom-right-radius: 10px; }
     animation-duration: 0s !important;
     animation-iteration-count: 1 !important;
   }
+
+  /* O anel azul é indicador de estado, não animação: mantém o fade. */
+  #tracker-ring {
+    transition-duration: 0.3s !important;
+  }
 }
 /* ========== Theme Variations (Optional) ========== */
 [data-theme="dark"] {
@@ -496,9 +501,9 @@ h1 {
 #tracker-ring {
   position: fixed;
   inset: 0;
-  border: 3px solid transparent;
+  border: 10px solid transparent;
   pointer-events: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
   z-index: 50;
 }
 
