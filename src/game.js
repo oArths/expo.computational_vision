@@ -79,19 +79,29 @@ export function criarJogo({ table, container, token, trail, aoAtualizarHud, aoTe
     const passo = PASSOS[direcao]
     if (!passo || !ativo || pausado) return
 
-    const row = jogador.row + passo.row
-    const col = jogador.col + passo.col
-    const celula = nivel.grid[row]?.[col]
+    let row = jogador.row
+    let col = jogador.col
 
-    if (!celula || celula === 'wall' || celula === 'boundary') return
+    // Desliza até bater na parede, como no jogo original.
+    while (true) {
+      row += passo.row
+      col += passo.col
 
-    criarParticulas(trail, centro())
-    jogador = { row, col }
-    movimentos += 1
-    animarToken(token, centro())
-    hud()
+      const celula = nivel.grid[row]?.[col]
 
-    if (row === nivel.goal.row && col === nivel.goal.col) avancarNivel()
+      if (!celula || celula === 'wall' || celula === 'boundary') break
+
+      criarParticulas(trail, centro())
+      jogador = { row, col }
+      movimentos += 1
+      animarToken(token, centro())
+      hud()
+
+      if (row === nivel.goal.row && col === nivel.goal.col) {
+        avancarNivel()
+        return
+      }
+    }
   }
 
   function reiniciar() {

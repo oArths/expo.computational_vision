@@ -23,7 +23,7 @@ npm run levels    # regenera src/levels.json
 ## Como jogar
 
 - **Mover:** junte a ponta do indicador com a do polegar, arraste e solte. O
-  deslocamento define a direção; um gesto move uma célula.
+  deslocamento define a direção e o jogador desliza até bater numa parede.
 - **Pausar/despausar:** levante as duas mãos, próximas e acima do centro, por 1 s.
 - **Borda azul:** a mão está sendo rastreada.
 - O cronômetro pausa junto e não conta no tempo total.

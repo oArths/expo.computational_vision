@@ -59,6 +59,8 @@ export function centroCelula(table, container, row, col) {
 }
 
 export function posicionarToken(token, point) {
+  // Sem isso, uma animação do nível anterior continua e reposiciona o token.
+  gsap.killTweensOf(token)
   gsap.set(token, { left: point.x, top: point.y })
 }
 

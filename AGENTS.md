@@ -15,7 +15,7 @@
 - Dimensões pares (backtracking anda 2 células). Nível 1 é 6x6; 3x3 não é labirinto válido.
 - A ordem de geração é `createGrid` → `generateMaze` → `ensureGoalAccess` → `orientBorderWalls` → `removeDoubleWalls` → `removeDoublePaths` → `removeDeadEnds`; preserve-a ao mexer na geometria.
 - `src/maze/view.js` só renderiza; nenhuma lógica de jogo deve ir para lá.
-- Cada gesto move exatamente uma célula (`src/game.js`), não desliza até a parede.
+- Cada gesto desliza até bater numa parede, como no jogo original. O gerador valida que todo nível tem solução por deslizamento; não troque o algoritmo de geração sem manter essa checagem.
 
 ## Gestos
 
