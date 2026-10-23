@@ -7,7 +7,8 @@ import {
   criarGesto,
   criarPausa,
   maoPrincipal,
-  medirGesto
+  progressoGesto,
+  quadranteDoPonto
 } from './gesture.js'
 import { abrirCamera, criarDetector, iniciarLoop } from './hands.js'
 import { desenharOverlay, redimensionarOverlay } from './overlay.js'
@@ -42,6 +43,7 @@ const telas = {
 }
 
 const gesto = criarGesto()
+const zonasCamera = [...document.querySelectorAll('.camera-zonas span')]
 const pausa = criarPausa()
 const debugGesto = new URLSearchParams(location.search).has('debug')
 
@@ -235,20 +237,29 @@ async function iniciarRastreamento() {
         if (primaria >= 0) ultimoRastreado = agora
         trackerRing.classList.toggle('tracked', agora - ultimoRastreado < 400)
 
-        desenharOverlay(overlay, {
-          hands,
-          primaria,
-          apontando: gesto.apontando
-        })
+        const aspecto = video.videoWidth / video.videoHeight || 1
+        const zonaAtiva =
+          primaria >= 0 ? quadranteDoPonto(hands[primaria][8], aspecto) : null
+
+        for (const zona of zonasCamera) {
+          zona.classList.toggle('ativa', zona.dataset.dir === zonaAtiva)
+        }
 
         if (rodando) {
           const direcao = atualizarGesto(
             gesto,
             primaria >= 0 ? hands[primaria] : null,
-            agora
+            agora,
+            aspecto
           )
           if (direcao) jogo.mover(direcao)
         }
+
+        desenharOverlay(overlay, {
+          hands,
+          primaria,
+          progresso: rodando ? progressoGesto(gesto, agora) : 0
+        })
 
         if (rodando && atualizarPausa(pausa, hands, agora)) alternarPausa()
 
@@ -263,11 +274,9 @@ async function iniciarRastreamento() {
         if (cameraStatus.textContent !== texto) cameraStatus.textContent = texto
 
         if (debugGesto) {
-          const medidas = primaria >= 0 ? medirGesto(hands[primaria]) : null
-
-          $('debug-gesto').textContent = medidas
-            ? `P ${medidas.polegar.toFixed(2)} · I ${medidas.indicador.toFixed(2)} · O ${medidas.outros.toFixed(2)} → ${medidas.direcao ?? '-'}`
-            : 'sem mão'
+          $('debug-gesto').textContent = `Z ${zonaAtiva ?? '-'} · ${Math.round(
+            progressoGesto(gesto, agora) * 100
+          )}%`
         }
       }
     })

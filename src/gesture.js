@@ -1,25 +1,13 @@
-// Gesto por dedo apontado: polegar (direita/cima/baixo) e indicador (esquerda).
-// Os outros três dedos precisam estar fechados.
+// Direção por quadrante: a ponta do indicador escolhe o lado da câmera e a
+// permanência nele confirma o movimento.
 
 const PULSO = 0
 const BASE_INDICADOR = 9
+const PONTA_INDICADOR = 8
 
-// Ponta e articulação do meio dos outros três dedos.
-const OUTROS = [
-  [12, 10],
-  [16, 14],
-  [20, 18]
-]
-
-const OUTROS_ATIVA = 1
-const INDICADOR_ATIVA = 1.2
-const INDICADOR_SOLTA = 1.05
-const POLEGAR_ATIVA = 0.55
-const POLEGAR_SOLTA = 0.4
-const DIRECAO_MIN = 0.28
-
+const ZONA_MORTA = 0.12
+const PERMANENCIA_MS = 250
 const PERDA_MAO_MS = 250
-const TROCA_MAO = 0.25
 
 const PAUSA_PUNHOS = 0.8
 const PAUSA_ESPERA_MS = 1000
@@ -46,106 +34,65 @@ export function maoPrincipal(hands) {
 }
 
 export function criarGesto() {
-  return { apontando: false, escala: 0, vistoEm: 0 }
+  return { zona: null, desde: 0, disparada: false, vistoEm: 0 }
 }
 
-// Razão entre a distância ponta→pulso e articulação→pulso. Dedo esticado fica
-// acima de 1, dedo dobrado fica abaixo — vale em qualquer rotação e distância.
-function razaoDedo(hand, ponta, articulacao) {
-  return distancia(hand[ponta], hand[PULSO]) / distancia(hand[articulacao], hand[PULSO])
-}
-
-// A tela é espelhada: apontar para a direita do jogador diminui o x da imagem.
-function direcaoDoPolegar(hand, escala) {
-  const dx = hand[4].x - hand[2].x
-  const dy = hand[4].y - hand[2].y
-
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < DIRECAO_MIN * escala) return null
-
-  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'RIGHT' : null
-
+function direcaoDoLado(dx, dy) {
+  // A tela é espelhada, então o lado direito da imagem (x < 0.5) é a direita do jogador.
+  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'RIGHT' : 'LEFT'
   return dy < 0 ? 'TOP' : 'BOTTOM'
 }
 
-function direcaoDoIndicador(hand, escala) {
-  const dx = hand[8].x - hand[5].x
-  const dy = hand[8].y - hand[5].y
+// `aspecto` (largura/altura) iguala o peso dos dois eixos em pixels.
+export function quadranteDoPonto(ponto, aspecto = 1) {
+  const dx = ponto.x - 0.5
+  const dy = (ponto.y - 0.5) / aspecto
 
-  if (Math.abs(dx) <= Math.abs(dy)) return null
-  if (dx < DIRECAO_MIN * escala) return null
+  if (Math.abs(dx) < ZONA_MORTA && Math.abs(dy) < ZONA_MORTA) return null
 
-  return 'LEFT'
+  return direcaoDoLado(dx, dy)
 }
 
-function medir(hand) {
-  const escala = escalaMao(hand)
-  if (escala === 0) return null
+// 0 a 1 enquanto o dedo se mantém na zona; 0 depois de disparar.
+export function progressoGesto(estado, agora) {
+  if (!estado.zona || estado.disparada) return 0
 
-  // Polegar afastado do indicador = esticado; dobrado, a ponta encosta nele.
-  const polegar = distancia(hand[4], hand[5]) / escala
-  const indicador = razaoDedo(hand, 8, 6)
-  const outros = Math.max(
-    ...OUTROS.map(([ponta, articulacao]) => razaoDedo(hand, ponta, articulacao))
-  )
-
-  let direcao = null
-
-  if (outros < OUTROS_ATIVA) {
-    const polegarFora = polegar > POLEGAR_ATIVA
-    const indicadorFora = indicador > INDICADOR_ATIVA
-
-    if (polegarFora !== indicadorFora) {
-      direcao = polegarFora
-        ? direcaoDoPolegar(hand, escala)
-        : direcaoDoIndicador(hand, escala)
-    }
-  }
-
-  return { escala, polegar, indicador, outros, direcao }
+  return Math.min(1, (agora - estado.desde) / PERMANENCIA_MS)
 }
 
-// Só para o modo ?debug: mostra o que a mão está medindo agora.
-export function medirGesto(hand) {
-  return medir(hand)
-}
-
-// Dispara uma direção por gesto, no momento em que o polegar ou o indicador aponta.
-export function atualizarGesto(estado, hand, agora) {
+// Dispara uma direção quando a ponta do indicador passa PERMANENCIA_MS na mesma zona.
+export function atualizarGesto(estado, hand, agora, aspecto = 1) {
   if (!hand) {
-    // O detector perde a mão de vez em quando; só zera se ela sumir de verdade.
-    if (estado.apontando && agora - estado.vistoEm > PERDA_MAO_MS) {
-      estado.apontando = false
+    // O detector perde a mão de vez em quando; um frame perdido não zera a espera.
+    if (estado.zona && agora - estado.vistoEm > PERDA_MAO_MS) {
+      estado.zona = null
+      estado.disparada = false
     }
     return null
   }
 
   estado.vistoEm = agora
 
-  const medidas = medir(hand)
-  if (!medidas) return null
+  const zona = quadranteDoPonto(hand[PONTA_INDICADOR], aspecto)
 
-  // Outra mão (ou outra pessoa): não conta como gesto novo até fechar.
-  if (
-    estado.escala &&
-    Math.abs(medidas.escala - estado.escala) / estado.escala > TROCA_MAO
-  ) {
-    estado.apontando = true
-  }
-
-  estado.escala = medidas.escala
-
-  if (estado.apontando) {
-    if (medidas.polegar < POLEGAR_SOLTA && medidas.indicador < INDICADOR_SOLTA) {
-      estado.apontando = false
-    }
-
+  if (!zona) {
+    estado.zona = null
+    estado.disparada = false
     return null
   }
 
-  if (!medidas.direcao) return null
+  if (zona !== estado.zona) {
+    estado.zona = zona
+    estado.desde = agora
+    estado.disparada = false
+    return null
+  }
 
-  estado.apontando = true
-  return medidas.direcao
+  if (estado.disparada) return null
+  if (agora - estado.desde < PERMANENCIA_MS) return null
+
+  estado.disparada = true
+  return zona
 }
 
 export function criarPausa() {

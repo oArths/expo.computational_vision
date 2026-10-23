@@ -13,7 +13,7 @@ export function redimensionarOverlay(canvas, video) {
   canvas.height = video.videoHeight
 }
 
-export function desenharOverlay(canvas, { hands, primaria, apontando }) {
+export function desenharOverlay(canvas, { hands, primaria, progresso = 0 }) {
   const ctx = canvas.getContext('2d')
   const { width, height } = canvas
 
@@ -48,8 +48,17 @@ export function desenharOverlay(canvas, { hands, primaria, apontando }) {
 
     const dedo = ponto(hand[PONTA_INDICADOR])
     ctx.beginPath()
-    ctx.arc(dedo.x, dedo.y, apontando ? 14 : 9, 0, Math.PI * 2)
-    ctx.fillStyle = apontando ? '#4facfe' : '#e53e3e'
+    ctx.arc(dedo.x, dedo.y, 9, 0, Math.PI * 2)
+    ctx.fillStyle = progresso > 0 ? '#4facfe' : '#e53e3e'
     ctx.fill()
+
+    // Arco de permanência: completa quando o movimento dispara.
+    if (progresso > 0) {
+      ctx.beginPath()
+      ctx.arc(dedo.x, dedo.y, 18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progresso)
+      ctx.strokeStyle = '#4facfe'
+      ctx.lineWidth = 3
+      ctx.stroke()
+    }
   })
 }

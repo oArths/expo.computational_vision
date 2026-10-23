@@ -21,12 +21,11 @@
 
 ## Gestos
 
-- Gesto: **um dedo apontando, resto fechado**. Polegar para a direita/cima/baixo; indicador para a esquerda. Os três outros dedos precisam estar dobrados (`razaoDedo < 1`).
-- Polegar esticado = `dist(4,5)/escala > 0.55` (dobrado encosta no indicador, < 0.4). A direção vem do vetor `2→4` no eixo dominante; direita exige `dx < 0` (tela espelhada) e polegar para a esquerda não tem ação.
-- Indicador esticado = `dist(8,0)/dist(6,0) > 1.2`; a direção vem de `5→8` com `dx` dominante e `dx > 0.28 * escala` → `LEFT`.
-- Nunca os dois esticados ao mesmo tempo; solta quando `polegar < 0.4` e `indicador < 1.05`.
-- `?debug` mostra `P`, `I`, `O` e a direção detectada ao vivo, para calibrar em mão real.
-- Mão ausente por mais de 250 ms zera o gesto; escala da mão mudando mais de 25% (outra mão) também, sem disparar no frame da troca.
+- Direção: a **ponta do indicador** (landmark 8) escolhe o lado da câmera (`quadranteDoPonto`): direita, esquerda, cima ou baixo, com área morta de 12% no centro. Não existe gesto de mão.
+- O movimento dispara após `PERMANENCIA_MS` (250 ms) na mesma zona; segurar não repete, sair e voltar rearma. Mão ausente por mais de 250 ms zera.
+- `y` é dividido pelo aspecto do vídeo para os dois eixos pesarem igual em pixels; o eixo dominante vence.
+- As metades ativas são destacadas em `.camera-zonas` (não espelhadas; o vídeo é) e o anel na ponta do dedo mostra a permanência (`progressoGesto`).
+- `?debug` mostra a zona e o progresso ao vivo, para calibrar em mão real.
 - `npm run check:gesto` cobre esses casos; rode ao mexer nos limiares.
 - Pausa: duas mãos acima do centro e com punhos próximos por 1 s. `numHands: 2`; a mão maior controla o movimento.
 

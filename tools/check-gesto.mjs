@@ -1,56 +1,14 @@
 import assert from 'node:assert/strict'
-import { atualizarGesto, criarGesto } from '../src/gesture.js'
+import { atualizarGesto, criarGesto, progressoGesto } from '../src/gesture.js'
 
 const DT = 33
+const ASPECTO = 4 / 3
 
-const OUTROS = [
-  [12, 10],
-  [16, 14],
-  [20, 18]
-]
-
-// `polegar`/`indicador` aceitam 'fechado', 'direita', 'esquerda', 'cima', 'baixo'.
-// `outros` = quantos dos outros três dedos ficam esticados.
-function mao({
-  x = 0.5,
-  y = 0.5,
-  escala = 0.1,
-  polegar = 'fechado',
-  indicador = 'fechado',
-  outros = 0
-}) {
+// Só a ponta do indicador (landmark 8) importa para a direção.
+function mao(x = 0.5, y = 0.5) {
   const hand = Array.from({ length: 21 }, () => ({ x, y }))
-  hand[0] = { x: x - escala, y }
-  hand[9] = { x, y }
-  hand[5] = { x: x + escala * 0.8, y: y - escala * 0.3 }
-  hand[2] = { x: x + escala * 0.15, y: y + escala * 0.1 }
 
-  const pontasPolegar = {
-    fechado: { x: x + escala * 0.85, y: y + escala * 0.05 },
-    direita: { x: x - escala * 0.9, y: y + escala * 0.1 },
-    esquerda: { x: x + escala * 1.6, y: y + escala * 0.1 },
-    cima: { x: x + escala * 0.35, y: y - escala * 1.2 },
-    baixo: { x: x + escala * 0.35, y: y + escala * 1.3 }
-  }
-
-  hand[4] = pontasPolegar[polegar]
-  hand[6] = { x: x + escala * 0.9, y: y - escala * 0.9 }
-  hand[8] =
-    indicador === 'esquerda'
-      ? { x: x + escala * 2, y: y - escala * 0.5 }
-      : { x: x + escala * 0.8, y: y - escala * 0.1 }
-
-  OUTROS.forEach(([ponta, articulacao], indice) => {
-    hand[articulacao] = {
-      x: x + escala,
-      y: y + escala * (0.1 + indice * 0.15)
-    }
-
-    hand[ponta] =
-      indice < outros
-        ? { x: x + escala * 2.1, y: y + escala * (0.1 + indice * 0.15) }
-        : { x: x + escala * 0.35, y: y + escala * (0.05 + indice * 0.08) }
-  })
+  hand[8] = { x, y }
 
   return hand
 }
@@ -58,19 +16,19 @@ function mao({
 function sessao() {
   const estado = criarGesto()
   let relogio = 0
+
   return {
     estado,
-    frame(polegar = 'fechado', indicador = 'fechado', outros = 0, escala = 0.1) {
+    frame(x, y) {
       relogio += DT
-      return atualizarGesto(
-        estado,
-        mao({ polegar, indicador, outros, escala }),
-        relogio
-      )
+      return atualizarGesto(estado, mao(x, y), relogio, ASPECTO)
     },
     semMao() {
       relogio += DT
-      return atualizarGesto(estado, null, relogio)
+      return atualizarGesto(estado, null, relogio, ASPECTO)
+    },
+    progresso() {
+      return progressoGesto(estado, relogio)
     },
     pular(ms) {
       relogio += ms
@@ -78,74 +36,87 @@ function sessao() {
   }
 }
 
-// 1. Polegar: direita, cima e baixo.
+// 1. Fica na zona até completar a permanência e dispara uma vez.
 {
   const s = sessao()
-  assert.equal(s.frame('direita'), 'RIGHT')
-  s.frame()
-  assert.equal(s.frame('cima'), 'TOP')
-  s.frame()
-  assert.equal(s.frame('baixo'), 'BOTTOM')
+  assert.equal(s.frame(0.2, 0.5), null)
+  assert.equal(s.frame(0.2, 0.5), null)
+  s.pular(300)
+  assert.equal(s.frame(0.2, 0.5), 'RIGHT')
+  assert.equal(s.frame(0.2, 0.5), null, 'não repete segurando')
 }
 
-// 2. Indicador para a esquerda.
+// 2. Sair da zona rearma: voltar e esperar dispara de novo.
 {
   const s = sessao()
-  assert.equal(s.frame('fechado', 'esquerda'), 'LEFT')
+  s.frame(0.2, 0.5)
+  s.pular(300)
+  assert.equal(s.frame(0.2, 0.5), 'RIGHT')
+  assert.equal(s.frame(0.5, 0.5), null, 'área morta')
+  assert.equal(s.frame(0.2, 0.5), null, 'entrou de novo')
+  s.pular(300)
+  assert.equal(s.frame(0.2, 0.5), 'RIGHT')
 }
 
-// 3. Polegar apontando para a esquerda não tem ação.
+// 3. Trocar de lado reinicia a contagem.
 {
   const s = sessao()
-  assert.equal(s.frame('esquerda'), null)
+  s.frame(0.2, 0.5)
+  s.pular(200)
+  assert.equal(s.frame(0.8, 0.5), null, 'lado novo não herda a espera')
+  s.pular(300)
+  assert.equal(s.frame(0.8, 0.5), 'LEFT')
 }
 
-// 4. Os dois dedos esticados não contam; fechar o indicador libera o polegar.
+// 4. Centro é área morta, mesmo parado.
 {
   const s = sessao()
-  assert.equal(s.frame('direita', 'esquerda'), null)
-  assert.equal(s.frame('direita'), 'RIGHT')
+  assert.equal(s.frame(0.5, 0.5), null)
+  s.pular(500)
+  assert.equal(s.frame(0.5, 0.5), null)
 }
 
-// 5. Com outro dedo aberto não conta.
+// 5. Perder a mão por mais de 250ms zera a contagem.
 {
   const s = sessao()
-  assert.equal(s.frame('direita', 'fechado', 1), null)
-}
-
-// 6. Gesto segurado não repete; fechar a mão libera.
-{
-  const s = sessao()
-  assert.equal(s.frame('direita'), 'RIGHT')
-  assert.equal(s.frame('direita'), null, 'polegar segurado não repete')
-  s.frame()
-  assert.equal(s.frame('direita'), 'RIGHT')
-}
-
-// 7. Gesto de um frame só conta do mesmo jeito.
-{
-  const s = sessao()
-  assert.equal(s.frame('cima'), 'TOP')
-  assert.equal(s.frame(), null)
-}
-
-// 8. Mão perdida por mais de 250ms reseta o gesto.
-{
-  const s = sessao()
-  assert.equal(s.frame('direita'), 'RIGHT')
+  s.frame(0.2, 0.5)
+  s.pular(200)
   s.semMao()
   s.pular(300)
   s.semMao()
-  assert.equal(s.estado.apontando, false)
+  assert.equal(s.frame(0.2, 0.5), null, 'recomeçou do zero')
+  s.pular(300)
+  assert.equal(s.frame(0.2, 0.5), 'RIGHT')
 }
 
-// 9. Troca de mão (escala muda muito) não dispara no frame da troca.
+// 6. Os quatro lados.
 {
   const s = sessao()
-  assert.equal(s.frame('direita', 'fechado', 0, 0.1), 'RIGHT')
-  assert.equal(s.frame('direita', 'fechado', 0, 0.05), null)
-  s.frame('fechado', 'fechado', 0, 0.05)
-  assert.equal(s.frame('direita', 'fechado', 0, 0.05), 'RIGHT')
+  s.frame(0.2, 0.5)
+  s.pular(300)
+  assert.equal(s.frame(0.2, 0.5), 'RIGHT')
+
+  s.frame(0.8, 0.5)
+  s.pular(300)
+  assert.equal(s.frame(0.8, 0.5), 'LEFT')
+
+  s.frame(0.5, 0.1)
+  s.pular(300)
+  assert.equal(s.frame(0.5, 0.1), 'TOP')
+
+  s.frame(0.5, 0.9)
+  s.pular(300)
+  assert.equal(s.frame(0.5, 0.9), 'BOTTOM')
+}
+
+// 7. O progresso acompanha a permanência.
+{
+  const s = sessao()
+  s.frame(0.2, 0.5)
+  s.pular(125)
+  assert.ok(Math.abs(s.progresso() - 0.5) < 0.08, `progresso ${s.progresso()}`)
+  s.pular(200)
+  assert.equal(s.progresso(), 1)
 }
 
 console.log('gesto: ok')
