@@ -11,12 +11,12 @@ const OUTROS = [
   [20, 18]
 ]
 
-const OUTROS_ATIVA = 0.85
+const OUTROS_ATIVA = 1
 const INDICADOR_ATIVA = 1.2
 const INDICADOR_SOLTA = 1.05
-const POLEGAR_ATIVA = 0.8
-const POLEGAR_SOLTA = 0.55
-const DIRECAO_MIN = 0.6
+const POLEGAR_ATIVA = 0.55
+const POLEGAR_SOLTA = 0.4
+const DIRECAO_MIN = 0.28
 
 const PERDA_MAO_MS = 250
 const TROCA_MAO = 0.25
@@ -55,15 +55,10 @@ function razaoDedo(hand, ponta, articulacao) {
   return distancia(hand[ponta], hand[PULSO]) / distancia(hand[articulacao], hand[PULSO])
 }
 
-// Polegar afastado do indicador = esticado. Dobrado, a ponta encosta nele.
-function tamanhoPolegar(hand, escala) {
-  return distancia(hand[4], hand[5]) / escala
-}
-
 // A tela é espelhada: apontar para a direita do jogador diminui o x da imagem.
-function direcaoDoPolegar(hand, escala, aspecto) {
+function direcaoDoPolegar(hand, escala) {
   const dx = hand[4].x - hand[2].x
-  const dy = (hand[4].y - hand[2].y) / aspecto
+  const dy = hand[4].y - hand[2].y
 
   if (Math.max(Math.abs(dx), Math.abs(dy)) < DIRECAO_MIN * escala) return null
 
@@ -72,9 +67,9 @@ function direcaoDoPolegar(hand, escala, aspecto) {
   return dy < 0 ? 'TOP' : 'BOTTOM'
 }
 
-function direcaoDoIndicador(hand, escala, aspecto) {
+function direcaoDoIndicador(hand, escala) {
   const dx = hand[8].x - hand[5].x
-  const dy = (hand[8].y - hand[5].y) / aspecto
+  const dy = hand[8].y - hand[5].y
 
   if (Math.abs(dx) <= Math.abs(dy)) return null
   if (dx < DIRECAO_MIN * escala) return null
@@ -82,9 +77,40 @@ function direcaoDoIndicador(hand, escala, aspecto) {
   return 'LEFT'
 }
 
+function medir(hand) {
+  const escala = escalaMao(hand)
+  if (escala === 0) return null
+
+  // Polegar afastado do indicador = esticado; dobrado, a ponta encosta nele.
+  const polegar = distancia(hand[4], hand[5]) / escala
+  const indicador = razaoDedo(hand, 8, 6)
+  const outros = Math.max(
+    ...OUTROS.map(([ponta, articulacao]) => razaoDedo(hand, ponta, articulacao))
+  )
+
+  let direcao = null
+
+  if (outros < OUTROS_ATIVA) {
+    const polegarFora = polegar > POLEGAR_ATIVA
+    const indicadorFora = indicador > INDICADOR_ATIVA
+
+    if (polegarFora !== indicadorFora) {
+      direcao = polegarFora
+        ? direcaoDoPolegar(hand, escala)
+        : direcaoDoIndicador(hand, escala)
+    }
+  }
+
+  return { escala, polegar, indicador, outros, direcao }
+}
+
+// Só para o modo ?debug: mostra o que a mão está medindo agora.
+export function medirGesto(hand) {
+  return medir(hand)
+}
+
 // Dispara uma direção por gesto, no momento em que o polegar ou o indicador aponta.
-// `aspecto` (largura/altura) iguala o peso dos dois eixos em pixels.
-export function atualizarGesto(estado, hand, agora, aspecto = 1) {
+export function atualizarGesto(estado, hand, agora) {
   if (!hand) {
     // O detector perde a mão de vez em quando; só zera se ela sumir de verdade.
     if (estado.apontando && agora - estado.vistoEm > PERDA_MAO_MS) {
@@ -95,42 +121,31 @@ export function atualizarGesto(estado, hand, agora, aspecto = 1) {
 
   estado.vistoEm = agora
 
-  const escala = escalaMao(hand)
-  if (escala === 0) return null
+  const medidas = medir(hand)
+  if (!medidas) return null
 
   // Outra mão (ou outra pessoa): não conta como gesto novo até fechar.
-  if (estado.escala && Math.abs(escala - estado.escala) / estado.escala > TROCA_MAO) {
+  if (
+    estado.escala &&
+    Math.abs(medidas.escala - estado.escala) / estado.escala > TROCA_MAO
+  ) {
     estado.apontando = true
   }
-  estado.escala = escala
 
-  const polegar = tamanhoPolegar(hand, escala)
-  const indicador = razaoDedo(hand, 8, 6)
+  estado.escala = medidas.escala
 
   if (estado.apontando) {
-    if (polegar < POLEGAR_SOLTA && indicador < INDICADOR_SOLTA) estado.apontando = false
+    if (medidas.polegar < POLEGAR_SOLTA && medidas.indicador < INDICADOR_SOLTA) {
+      estado.apontando = false
+    }
+
     return null
   }
 
-  const fechados = OUTROS.every(
-    ([ponta, articulacao]) => razaoDedo(hand, ponta, articulacao) < OUTROS_ATIVA
-  )
-
-  if (!fechados) return null
-
-  const polegarFora = polegar > POLEGAR_ATIVA
-  const indicadorFora = indicador > INDICADOR_ATIVA
-
-  if (polegarFora === indicadorFora) return null
-
-  const direcao = polegarFora
-    ? direcaoDoPolegar(hand, escala, aspecto)
-    : direcaoDoIndicador(hand, escala, aspecto)
-
-  if (!direcao) return null
+  if (!medidas.direcao) return null
 
   estado.apontando = true
-  return direcao
+  return medidas.direcao
 }
 
 export function criarPausa() {

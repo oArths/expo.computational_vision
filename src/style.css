@@ -652,6 +652,19 @@ td.wall.corner-br { border-bottom-right-radius: 10px; }
   min-height: 20px;
 }
 
+/* ?debug: mostra as medidas do gesto ao vivo para calibrar os limiares. */
+#debug-gesto {
+  display: none;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--color-ui-fg);
+  text-align: center;
+}
+
+body.debug #debug-gesto {
+  display: block;
+}
+
 .game-hud {
   display: flex;
   align-items: center;

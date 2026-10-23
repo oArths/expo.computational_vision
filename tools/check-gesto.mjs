@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { atualizarGesto, criarGesto } from '../src/gesture.js'
 
 const DT = 33
-const ASPECTO = 4 / 3
 
 const OUTROS = [
   [12, 10],
@@ -66,13 +65,12 @@ function sessao() {
       return atualizarGesto(
         estado,
         mao({ polegar, indicador, outros, escala }),
-        relogio,
-        ASPECTO
+        relogio
       )
     },
     semMao() {
       relogio += DT
-      return atualizarGesto(estado, null, relogio, ASPECTO)
+      return atualizarGesto(estado, null, relogio)
     },
     pular(ms) {
       relogio += ms

@@ -6,7 +6,8 @@ import {
   atualizarPausa,
   criarGesto,
   criarPausa,
-  maoPrincipal
+  maoPrincipal,
+  medirGesto
 } from './gesture.js'
 import { abrirCamera, criarDetector, iniciarLoop } from './hands.js'
 import { desenharOverlay, redimensionarOverlay } from './overlay.js'
@@ -42,6 +43,9 @@ const telas = {
 
 const gesto = criarGesto()
 const pausa = criarPausa()
+const debugGesto = new URLSearchParams(location.search).has('debug')
+
+if (debugGesto) document.body.classList.add('debug')
 
 let ultimoRastreado = 0
 let ultimoFrameEm = 0
@@ -241,8 +245,7 @@ async function iniciarRastreamento() {
           const direcao = atualizarGesto(
             gesto,
             primaria >= 0 ? hands[primaria] : null,
-            agora,
-            video.videoWidth / video.videoHeight || 1
+            agora
           )
           if (direcao) jogo.mover(direcao)
         }
@@ -258,6 +261,14 @@ async function iniciarRastreamento() {
         const maos = hands.length >= 2 ? ' · 2 mãos' : ''
         const texto = `Câmera ativa · ${Math.round(fps)} fps${maos} · ${delegado}`
         if (cameraStatus.textContent !== texto) cameraStatus.textContent = texto
+
+        if (debugGesto) {
+          const medidas = primaria >= 0 ? medirGesto(hands[primaria]) : null
+
+          $('debug-gesto').textContent = medidas
+            ? `P ${medidas.polegar.toFixed(2)} · I ${medidas.indicador.toFixed(2)} · O ${medidas.outros.toFixed(2)} → ${medidas.direcao ?? '-'}`
+            : 'sem mão'
+        }
       }
     })
   } catch (erro) {
