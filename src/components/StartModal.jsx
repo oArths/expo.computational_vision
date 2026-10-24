@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Modal, { useFoco } from './Modal.jsx'
 
-export default function StartModal({ aberto, nickname, onNickname, erro, enviando, onComecar }) {
+export default function StartModal({ aberto, nickname, onNickname, erro, enviando, onValidar, onComecar }) {
   const inputRef = useFoco(aberto)
   const [etapa, setEtapa] = useState('nome')
 
@@ -9,7 +9,7 @@ export default function StartModal({ aberto, nickname, onNickname, erro, enviand
     if (aberto) setEtapa('nome')
   }, [aberto])
 
-  // Nome repetido é descoberto no "Começar"; volta para a etapa do nome.
+  // Nome repetido é descoberto no "Avançar"; mantém a etapa do nome e o foco.
   useEffect(() => {
     if (erro) {
       setEtapa('nome')
@@ -17,13 +17,13 @@ export default function StartModal({ aberto, nickname, onNickname, erro, enviand
     }
   }, [erro, inputRef])
 
-  function avancar() {
+  async function avancar() {
     if (!nickname.trim()) {
       inputRef.current?.focus()
       return
     }
 
-    setEtapa('instrucoes')
+    if (await onValidar()) setEtapa('instrucoes')
   }
 
   return (
@@ -49,8 +49,8 @@ export default function StartModal({ aberto, nickname, onNickname, erro, enviand
             }}
           />
           <p className="min-h-[18px] text-xs text-accent-red">{erro}</p>
-          <button className="btn" onClick={avancar}>
-            Avançar
+          <button className="btn" disabled={enviando} onClick={avancar}>
+            {enviando ? 'Verificando...' : 'Avançar'}
           </button>
         </>
       ) : (

@@ -277,33 +277,34 @@ export default function App() {
     })
   }, [])
 
-  const iniciarDesafio = useCallback(async () => {
+  // Chamada no "Avançar" da primeira etapa do modal.
+  const validarNome = useCallback(async () => {
     const nome = nickname.trim()
-
-    if (!nome) {
-      useUi.setState({ erroInicio: '' })
-      return
-    }
-
     useUi.setState({ erroInicio: '' })
 
-    if (supabaseConfigurado) {
-      useUi.setState({ conferindoNome: true })
+    if (!nome) return false
+    if (!supabaseConfigurado) return true
 
-      try {
-        if (await nicknameEmUso(nome)) {
-          useUi.setState({ erroInicio: 'Esse nome já está no ranking. Escolha outro.' })
-          return
-        }
-      } catch (erro) {
-        // Sem rede a checagem falha; o banco ainda barra o nome repetido no final.
-        console.warn('Não foi possível checar o nome.', erro)
-      } finally {
-        useUi.setState({ conferindoNome: false })
+    useUi.setState({ conferindoNome: true })
+
+    try {
+      if (await nicknameEmUso(nome)) {
+        useUi.setState({ erroInicio: 'Esse nome já está no ranking. Escolha outro.' })
+        return false
       }
-    }
 
-    const nomeFinal = nome.slice(0, 20)
+      return true
+    } catch (erro) {
+      // Sem rede a checagem falha; o banco ainda barra o nome repetido no final.
+      console.warn('Não foi possível checar o nome.', erro)
+      return true
+    } finally {
+      useUi.setState({ conferindoNome: false })
+    }
+  }, [nickname])
+
+  const iniciarDesafio = useCallback(() => {
+    const nomeFinal = nickname.trim().slice(0, 20)
     nicknameRef.current = nomeFinal
     useCorrida.setState({ nickname: nomeFinal })
     clearTimeout(reinicioRef.current)
@@ -590,6 +591,7 @@ export default function App() {
         }}
         erro={erroInicio}
         enviando={conferindoNome}
+        onValidar={validarNome}
         onComecar={iniciarDesafio}
       />
 
