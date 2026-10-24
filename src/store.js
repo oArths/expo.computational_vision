@@ -12,7 +12,7 @@ export const useUi = create(() => ({
     movimentos: 0,
     segundos: 0
   },
-  ranking: { linhas: [], status: '' },
+  ranking: { linhas: [], status: '', carregando: false },
   erroInicio: '',
   conferindoNome: false,
   startAberto: false,

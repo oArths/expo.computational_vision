@@ -107,7 +107,14 @@ export default function App() {
 
         nicknameRef.current = nome
         useUi.setState(state => ({
-          resultado: { ...state.resultado, posicao: `${posicao}º`, status: '', top, renomear: false }
+          resultado: {
+            ...state.resultado,
+            posicao: `${posicao}º`,
+            status: '',
+            top,
+            renomear: false,
+            enviando: false
+          }
         }))
         agendarVolta()
       } catch (erro) {
@@ -122,7 +129,8 @@ export default function App() {
               ...state.resultado,
               posicao: '-',
               status: 'Esse nome já foi usado. Escolha outro para salvar o score.',
-              renomear: true
+              renomear: true,
+              enviando: false
             }
           }))
           return
@@ -132,7 +140,8 @@ export default function App() {
           resultado: {
             ...state.resultado,
             posicao: '-',
-            status: 'Não foi possível enviar para o ranking. O resultado local acima é válido.'
+            status: 'Não foi possível enviar para o ranking. O resultado local acima é válido.',
+            enviando: false
           }
         }))
       }
@@ -158,7 +167,8 @@ export default function App() {
             ? 'Enviando resultado...'
             : 'Ranking desativado (sem configuração).',
           top: [],
-          renomear: false
+          renomear: false,
+          enviando: supabaseConfigurado
         }
       })
       agendarVolta()
@@ -170,7 +180,9 @@ export default function App() {
 
   const salvarNovoNome = useCallback(
     async nome => {
-      useUi.setState(state => (state.resultado ? { resultado: { ...state.resultado, status: 'Enviando...' } } : {}))
+      useUi.setState(state =>
+        state.resultado ? { resultado: { ...state.resultado, status: 'Enviando...', enviando: true } } : {}
+      )
       await enviarScore(nome)
     },
     [enviarScore]
@@ -309,7 +321,8 @@ export default function App() {
       tela: 'ranking',
       ranking: {
         linhas: [],
-        status: supabaseConfigurado ? 'Carregando...' : 'Ranking desativado (sem configuração).'
+        status: supabaseConfigurado ? '' : 'Ranking desativado (sem configuração).',
+        carregando: supabaseConfigurado
       }
     })
 
@@ -317,10 +330,18 @@ export default function App() {
 
     try {
       const linhas = await listarRanking()
-      useUi.setState({ ranking: { linhas, status: linhas.length ? '' : 'Nenhum resultado ainda.' } })
+      useUi.setState({
+        ranking: {
+          linhas,
+          status: linhas.length ? '' : 'Nenhum resultado ainda.',
+          carregando: false
+        }
+      })
     } catch (erro) {
       console.error(erro)
-      useUi.setState({ ranking: { linhas: [], status: 'Não foi possível carregar o ranking.' } })
+      useUi.setState({
+        ranking: { linhas: [], status: 'Não foi possível carregar o ranking.', carregando: false }
+      })
     }
   }, [])
 
@@ -486,6 +507,7 @@ export default function App() {
         aberto={tela === 'ranking'}
         linhas={ranking.linhas}
         status={ranking.status}
+        carregando={ranking.carregando}
         onVoltar={irParaHome}
       />
 

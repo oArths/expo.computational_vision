@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { formatarPontos } from '../format.js'
 import Modal from './Modal.jsx'
+import Skeleton from './Skeleton.jsx'
 
 export default function ResultModal({ resultado, onSalvar, onReiniciar }) {
   const [novoNome, setNovoNome] = useState('')
@@ -39,7 +40,8 @@ export default function ResultModal({ resultado, onSalvar, onReiniciar }) {
         Score: <strong>{formatarPontos(resultado.score)}</strong>
       </p>
       <p className="result-line">
-        Posição: <strong>{resultado.posicao}</strong>
+        Posição:{' '}
+        {resultado.enviando ? <Skeleton className="h-4 w-10" /> : <strong>{resultado.posicao}</strong>}
       </p>
 
       <table className="rank">
@@ -52,6 +54,25 @@ export default function ResultModal({ resultado, onSalvar, onReiniciar }) {
           </tr>
         </thead>
         <tbody>
+          {resultado.enviando &&
+            resultado.top.length === 0 &&
+            Array.from({ length: 4 }, (_, index) => (
+              <tr key={`skeleton-${index}`}>
+                <td>
+                  <Skeleton className="h-3 w-4" />
+                </td>
+                <td>
+                  <Skeleton className="h-3 w-24" />
+                </td>
+                <td>
+                  <Skeleton className="h-3 w-14" />
+                </td>
+                <td>
+                  <Skeleton className="h-3 w-8" />
+                </td>
+              </tr>
+            ))}
+
           {resultado.top.map((linha, index) => (
             <tr key={`${linha.nickname}-${index}`}>
               <td>{index + 1}</td>

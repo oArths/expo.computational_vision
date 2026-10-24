@@ -1,6 +1,7 @@
 import { formatarData, formatarPontos } from '../format.js'
+import Skeleton from './Skeleton.jsx'
 
-export default function RankingScreen({ aberto, linhas, status, onVoltar }) {
+export default function RankingScreen({ aberto, linhas, status, carregando, onVoltar }) {
   return (
     <section
       id="screen-ranking"
@@ -14,6 +15,17 @@ export default function RankingScreen({ aberto, linhas, status, onVoltar }) {
       </div>
 
       <ol className="flex w-[90%] flex-col gap-2 md:w-[70%]">
+        {carregando &&
+          Array.from({ length: 6 }, (_, index) => (
+            <li key={`skeleton-${index}`} className="rank-row">
+              <Skeleton className="mx-auto h-6 w-8" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-10" />
+              <Skeleton className="h-3 w-16" />
+            </li>
+          ))}
+
         {linhas.map((linha, index) => (
           <li key={`${linha.nickname}-${index}`} className={`rank-row ${index < 3 ? `top${index + 1}` : ''}`}>
             <span className="rank-pos">{index + 1}º</span>
