@@ -19,11 +19,11 @@ export const LEVELS = [
   { size: 20, difficulty: 'medio' },
   { size: 22, difficulty: 'medio' },
   { size: 24, difficulty: 'medio' },
+  { size: 24, difficulty: 'dificil' },
   { size: 26, difficulty: 'dificil' },
   { size: 28, difficulty: 'dificil' },
   { size: 30, difficulty: 'dificil' },
-  { size: 32, difficulty: 'dificil' },
-  { size: 34, difficulty: 'dificil' }
+  { size: 32, difficulty: 'dificil' }
 ]
 
 export function mulberry32(seed) {
