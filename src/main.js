@@ -1,5 +1,6 @@
 import confetti from 'canvas-confetti'
 import './style.css'
+
 import { criarJogo } from './game.js'
 import {
   atualizarGesto,
@@ -36,6 +37,7 @@ const pauseHint = $('pause-hint')
 const pauseProgress = $('pause-progress')
 const startModal = $('start-modal')
 const resultModal = $('result-modal')
+
 
 const telas = {
   home: $('screen-home'),
@@ -175,11 +177,12 @@ async function abrirRanking() {
     $('ranking-list').innerHTML = lista
       .map(
         (linha, index) => `
-          <li class="rank-row ${index < 3 ? `top${index + 1}` : ''}">
+          <li class="rank-row    ${index < 3 ? `top${index + 1}` : ''}">
             <span class="rank-pos">${index + 1}º</span>
             <span class="rank-name">${escapar(linha.nickname ?? '')}</span>
-            <span class="rank-value">${formatarPontos(linha.score)} pts</span>
-            <span class="rank-value">${linha.time}s</span>
+            <span class="rank-value max-xl:text-right">${formatarPontos(linha.score)} pts</span>
+            <span class="rank-value max-xl:text-center">${linha.time}s</span>
+            <span class="rank-value max-xl:text-right  -col-end-1 ">${linha.created_at.slice(0,10).split("-").reverse().join("/")}</span>
           </li>`
       )
       .join('')

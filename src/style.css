@@ -1,5 +1,4 @@
-/* Putt Party Visual Style System */
-/* Based on: Putt Party Ã¢â‚¬â€ Visual Style Guide by Shil Studio */
+@import "tailwindcss";
 
 :root {
   /* ========== Design Tokens ========== */
@@ -503,13 +502,12 @@ td.wall.corner-br { border-bottom-right-radius: 10px; }
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  width: min(760px, 92vw);
   list-style: none;
 }
 
 .rank-row {
   display: grid;
-  grid-template-columns: 64px 1fr auto auto;
+  grid-template-columns: 64px 1fr auto auto auto;
   align-items: center;
   gap: var(--space-lg);
   padding: var(--space-md) var(--space-lg);
@@ -517,6 +515,13 @@ td.wall.corner-br { border-bottom-right-radius: 10px; }
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-soft);
   animation: rank-in 0.3s ease both;
+}
+@media (max-width: 1080px) {
+  .rank-row {
+    grid-template-columns: 48px minmax(0, 1fr) 1fr;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+  }
 }
 
 .rank-pos {
@@ -832,7 +837,6 @@ body.debug #debug-gesto {
 }
 
 .modal-card label {
-  font-size: var(--font-sm);
   font-weight: 600;
   color: var(--color-ui-muted);
 }

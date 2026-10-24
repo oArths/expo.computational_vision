@@ -45,7 +45,7 @@ export async function listarRanking() {
 
   const { data, error } = await supabase
     .from('Users')
-    .select('nickname, score, time')
+    .select('nickname, score, time, created_at')
     .order('score', { ascending: false })
     .order('time', { ascending: true })
     .limit(100)

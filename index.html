@@ -3,26 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Putt Party — Mini Golf</title>
+    <title>Expo Golf - Computer Vision</title>
+    <link href="/src/style.css" rel="stylesheet" />
+    <link rel="icon" href="/imgs/logo.png" type="image/png" />
   </head>
   <body>
     <div id="tracker-ring" aria-hidden="true"></div>
 
     <section id="screen-home" class="screen active">
-      <h1 class="home-title">Putt Party</h1>
+      <h1 class="home-title">Expo Golf</h1>
       <button id="home-start" class="btn-primary">Iniciar</button>
       <button id="home-ranking" class="link-button">Ver ranking</button>
     </section>
 
     <section id="screen-ranking" class="screen">
-      <h2 class="screen-title">Ranking</h2>
-      <ol id="ranking-list" class="ranking-list"></ol>
+      <div class="flex flex-row justify-between items-center w-[90%] px-10">
+        <h2 class="screen-title">Ranking</h2>
+        <button id="ranking-back" class="btn-secondary">Voltar</button>
+      </div>
+      <ol id="ranking-list" class="ranking-list w-[90%] md:w-[70%]"></ol>
       <p id="ranking-status"></p>
-      <button id="ranking-back" class="btn-secondary">Voltar</button>
     </section>
 
     <section id="screen-game" class="screen">
-      <h1 class="game-title">Putt Party</h1>
+      <h1 class="game-title">Expo Golf</h1>
 
       <aside class="camera-panel">
         <div class="camera-frame">
@@ -40,7 +44,10 @@
       </aside>
 
       <div class="game-hud">
-        <span>Nível <strong id="level">1/15</strong> <small id="difficulty">facil</small></span>
+        <span
+          >Nível <strong id="level">1/15</strong>
+          <small id="difficulty">facil</small></span
+        >
         <span>Movimentos <strong id="moves">0</strong></span>
         <span>Tempo <strong id="time">0</strong>s</span>
         <button id="exit-button" class="link-button">Sair</button>
@@ -50,7 +57,12 @@
         <table id="maze"></table>
         <svg id="player-trail" aria-hidden="true"></svg>
         <svg id="player-token" viewBox="0 0 100 100" aria-hidden="true">
-          <circle cx="50" cy="50" r="46" fill="var(--color-accent-red, #e53e3e)" />
+          <circle
+            cx="50"
+            cy="50"
+            r="46"
+            fill="var(--color-accent-red, #e53e3e)"
+          />
         </svg>
       </div>
     </section>
@@ -69,10 +81,23 @@
 
     <div id="start-modal" class="modal">
       <div class="modal-card">
-        <h2>Putt Party</h2>
-        <p>Aponte o dedo indicador para o lado que quer ir e segure por um instante. 15 níveis.</p>
-        <label for="nickname">Seu nome</label>
-        <input id="nickname" maxlength="20" autocomplete="off" placeholder="até 20 caracteres" />
+        <h2>Expo Golf</h2>
+        <div>
+          <div class="w-full flex items-center justify-center">
+            <img class="w-40" src="/imgs/dedo-indicador.png" />
+          </div>
+          <p>
+            Aponte o dedo indicador para o lado que quer ir e segure por um
+            instante.
+          </p>
+        </div>
+        <label class="text-lg" for="nickname">Seu nome</label>
+        <input
+          id="nickname"
+          maxlength="20"
+          autocomplete="off"
+          placeholder="até 20 caracteres"
+        />
         <p id="start-error" class="modal-error"></p>
         <button id="start-button">Começar</button>
       </div>
@@ -81,14 +106,23 @@
     <div id="result-modal" class="modal">
       <div class="modal-card">
         <h2>Desafio completo</h2>
-        <p class="result-line">Movimentos: <strong id="result-moves">0</strong></p>
+        <p class="result-line">
+          Movimentos: <strong id="result-moves">0</strong>
+        </p>
         <p class="result-line">Tempo: <strong id="result-time">0</strong>s</p>
         <p class="result-line">Score: <strong id="result-score">0</strong></p>
-        <p class="result-line">Posição: <strong id="result-position">-</strong></p>
+        <p class="result-line">
+          Posição: <strong id="result-position">-</strong>
+        </p>
 
         <table class="rank">
           <thead>
-            <tr><th>#</th><th>Nome</th><th>Score</th><th>Tempo</th></tr>
+            <tr>
+              <th>#</th>
+              <th>Nome</th>
+              <th>Score</th>
+              <th>Tempo</th>
+            </tr>
           </thead>
           <tbody id="result-body"></tbody>
         </table>
@@ -96,8 +130,15 @@
         <p id="result-status"></p>
 
         <div id="result-rename" class="result-rename">
-          <label for="result-nickname">Esse nome já foi usado. Escolha outro para salvar:</label>
-          <input id="result-nickname" maxlength="20" autocomplete="off" placeholder="até 20 caracteres" />
+          <label for="result-nickname"
+            >Esse nome já foi usado. Escolha outro para salvar:</label
+          >
+          <input
+            id="result-nickname"
+            maxlength="20"
+            autocomplete="off"
+            placeholder="até 20 caracteres"
+          />
           <button id="result-save">Salvar</button>
         </div>
 
