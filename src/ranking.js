@@ -29,10 +29,13 @@ export async function enviarResultado({ nickname, segundos, score }) {
 export async function nicknameEmUso(nickname) {
   if (!supabase) return false
 
+  // % e _ são curingas no ilike; sem escapar, "a_b" barraria nomes alheios.
+  const padrao = nickname.replace(/[\\%_]/g, '\\$&')
+
   const { data, error } = await supabase
     .from('Users')
     .select('id')
-    .ilike('nickname', nickname)
+    .ilike('nickname', padrao)
     .limit(1)
 
   if (error) throw error
