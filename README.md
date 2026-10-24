@@ -1,6 +1,6 @@
 # Putt Party — Controle por Gestos
 
-Jogo de labirinto com 15 níveis controlado por gestos da mão. A câmera e o
+Jogo de labirinto com 10 níveis controlado por gestos da mão. A câmera e o
 MediaPipe rodam **no navegador**; o único serviço externo é o Supabase para o
 ranking.
 
@@ -44,11 +44,11 @@ concluído.
 
 ## Regras do jogo
 
-- 15 níveis pré-gerados: 5 fáceis (6x6 a 14x14), 5 médios (16x16 a 24x24) e
-  5 difíceis (26x26 a 34x34).
+- 10 níveis pré-gerados: 3 fáceis (6x6 a 10x10), 4 médios (14x14 a 26x26) e
+  3 difíceis (30x30 a 38x38).
 - Os layouts são idênticos para todos (gerados com semente), para o ranking ser
   justo.
-- Ao concluir os 15 níveis, o resultado é enviado ao ranking.
+- Ao concluir os 10 níveis, o resultado é enviado ao ranking.
 - Score: `round(1_000_000 / (1 + gestos × segundos / 20_000))`, exibido com
   separador de milhar. Menos gestos e menos tempo = maior score.
 - `Movimentos` no HUD conta **gestos** (um por deslizamento), não casas

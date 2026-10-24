@@ -6,7 +6,7 @@ const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 export const supabaseConfigurado = Boolean(url && key)
 const supabase = supabaseConfigurado ? createClient(url, key) : null
 
-// Menos gestos e menos tempo = score maior. Só é enviado ao completar os 15 níveis.
+// Menos gestos e menos tempo = score maior. Só é enviado ao completar os 10 níveis.
 export function calcularScore(movimentos, segundos) {
   return Math.round(
     1_000_000 / (1 + (movimentos * Math.max(1, segundos)) / 20_000)

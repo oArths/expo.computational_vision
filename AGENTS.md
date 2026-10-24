@@ -15,7 +15,7 @@
 
 ## Labirinto
 
-- Os 15 níveis são pré-gerados com `mulberry32(seed)` em `src/maze/model.js` e commitados em `src/levels.json`. O layout precisa ser idêntico para todos (ranking justo) — não trocar para geração aleatória em runtime.
+- Os 10 níveis são pré-gerados com `mulberry32(seed)` em `src/maze/model.js` e commitados em `src/levels.json`. O layout precisa ser idêntico para todos (ranking justo) — não trocar para geração aleatória em runtime.
 - Dimensões pares (backtracking anda 2 células). Nível 1 é 6x6; 3x3 não é labirinto válido.
 - A ordem de geração é `createGrid` → `generateMaze` → `ensureGoalAccess` → `orientBorderWalls` → `removeDoubleWalls` → `removeDoublePaths` → `removeDeadEnds`; preserve-a ao mexer na geometria.
 - `src/maze/view.js` só renderiza; nenhuma lógica de jogo deve ir para lá.
@@ -38,7 +38,7 @@
 - O HUD é atualizado por um `setInterval` de 250 ms em `src/game.js` (independente de movimento).
 - A partida é salva junto com o HUD e retomada no reload por `jogo.restaurar()`. O tempo fora da página conta no score (`Date.now() - salvoEm`), senão recarregar viraria pausa. Sair e terminar limpam a corrida salva.
 - `finalizar()` lê `tempoMs()` **antes** de `ativo = false`; inverter a ordem faz o tempo virar 1 s.
-- Score: `round(1_000_000 / (1 + movimentos × segundos / 20_000))`, enviado somente ao concluir o nível 15.
+- Score: `round(1_000_000 / (1 + movimentos × segundos / 20_000))`, enviado somente ao concluir o nível 10.
 - `movimentos` conta **gestos** (um por deslizamento): o contador fica dentro do `while` de `mover()`, mas só incrementa na primeira casa (`deslizou`). Não mover o incremento para fora sem tratar o `avancarNivel()`.
 
 ## Supabase
