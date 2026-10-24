@@ -49,6 +49,7 @@ export default function App() {
   const zona = useUi(state => state.zona)
   const rastreado = useUi(state => state.rastreado)
   const segurando = useUi(state => state.segurando)
+  const cameraTentativa = useUi(state => state.cameraTentativa)
   const nickname = useCorrida(state => state.nickname)
 
   const containerRef = useRef(null)
@@ -459,7 +460,7 @@ export default function App() {
       cancelarLoop()
       stream?.getTracks().forEach(track => track.stop())
     }
-  }, [alternarPausa])
+  }, [alternarPausa, cameraTentativa])
 
   useEffect(() => {
     function aoTeclar(event) {
@@ -525,6 +526,12 @@ export default function App() {
           zona={zona}
           debugGesto={DEBUG_GESTO}
           debugRef={debugRef}
+          onTentar={() =>
+            useUi.setState(state => ({
+              cameraTentativa: state.cameraTentativa + 1,
+              statusCamera: 'Iniciando câmera...'
+            }))
+          }
         />
 
         <div className="mb-3 flex items-center gap-4 rounded-[10px] bg-white px-4 py-2 text-sm shadow-soft">

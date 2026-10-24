@@ -1,8 +1,8 @@
 const DIRECOES = ['LEFT', 'RIGHT', 'TOP', 'BOTTOM']
 
-export default function CameraPanel({ videoRef, overlayRef, status, zona, debugGesto, debugRef }) {
+export default function CameraPanel({ videoRef, overlayRef, status, zona, debugGesto, debugRef, onTentar }) {
   return (
-    <aside className="absolute right-4 top-4 flex w-[min(320px,26vw)] flex-col gap-1">
+    <aside className="absolute right-4 top-4 flex w-[min(420px,30vw)] flex-col gap-1">
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-soft">
         <video
           ref={videoRef}
@@ -22,6 +22,11 @@ export default function CameraPanel({ videoRef, overlayRef, status, zona, debugG
         </div>
       </div>
       <p className="min-h-5 text-center text-xs text-ui-muted">{status}</p>
+      {status.startsWith('Câmera indisponível') && (
+        <button className="link-button text-xs" onClick={onTentar}>
+          Tentar novamente
+        </button>
+      )}
       {debugGesto && <p ref={debugRef} className="text-center font-mono text-xs text-ui-fg" />}
     </aside>
   )

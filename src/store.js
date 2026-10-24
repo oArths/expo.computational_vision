@@ -21,7 +21,8 @@ export const useUi = create(() => ({
   statusCamera: 'Iniciando câmera...',
   zona: null,
   rastreado: false,
-  segurando: false
+  segurando: false,
+  cameraTentativa: 0
 }))
 
 // Partida em andamento: sobrevive ao reload via localStorage.
