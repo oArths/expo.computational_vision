@@ -26,7 +26,7 @@
 - Direção: a **ponta do indicador** (landmark 8) escolhe o lado da câmera (`quadranteDoPonto`): direita, esquerda, cima ou baixo, com área morta de 12% no centro. Não existe gesto de mão.
 - O movimento dispara após `PERMANENCIA_MS` (250 ms) na mesma zona; segurar não repete, sair e voltar rearma. Mão ausente por mais de 250 ms zera.
 - `y` é dividido pelo aspecto do vídeo para os dois eixos pesarem igual em pixels; o eixo dominante vence.
-- As metades ativas são destacadas em `.camera-zonas` (não espelhadas; o vídeo é) e o anel na ponta do dedo mostra a permanência (`progressoGesto`).
+- Os quadrados em `.camera-zonas` apenas indicam onde manter o dedo (não espelhados; o vídeo é); o quadrante detectado acende o quadrado correspondente. O anel na ponta do dedo mostra a permanência (`progressoGesto`).
 - `?debug` mostra a zona e o progresso ao vivo, para calibrar em mão real.
 - `npm run check:gesto` cobre esses casos; rode ao mexer nos limiares.
 - Pausa: duas mãos acima do centro e com punhos próximos por 1 s. `numHands: 2`; a mão maior controla o movimento.

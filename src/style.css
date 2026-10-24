@@ -354,20 +354,13 @@ td.wall.corner-br { border-bottom-right-radius: 10px; }
 }
 
 /* ========== Câmera ========== */
+/* Os quadrados só mostram onde manter o dedo; a contagem continua sendo por
+   quadrante em src/gesture.js. */
 .camera-zonas {
   position: absolute;
   inset: 0;
   display: block;
   pointer-events: none;
-}
-
-.camera-zonas::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(to right, transparent 49.7%, rgba(255, 255, 255, 0.55) 50%, transparent 50.3%),
-    linear-gradient(to bottom, transparent 49.7%, rgba(255, 255, 255, 0.55) 50%, transparent 50.3%);
 }
 
 /* Área morta do centro: apontar aqui não move. */
@@ -381,28 +374,41 @@ td.wall.corner-br { border-bottom-right-radius: 10px; }
 
 .camera-zonas span {
   position: absolute;
+  height: 30%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
   background: transparent;
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
 .camera-zonas span.ativa {
   background: rgba(79, 172, 254, 0.32);
+  border-color: rgba(79, 172, 254, 0.9);
 }
 
 .camera-zonas [data-dir='LEFT'] {
-  inset: 0 50% 0 0;
+  left: 3%;
+  top: 50%;
+  translate: 0 -50%;
 }
 
 .camera-zonas [data-dir='RIGHT'] {
-  inset: 0 0 0 50%;
+  right: 3%;
+  top: 50%;
+  translate: 0 -50%;
 }
 
 .camera-zonas [data-dir='TOP'] {
-  inset: 0 0 50% 0;
+  top: 3%;
+  left: 50%;
+  translate: -50% 0;
 }
 
 .camera-zonas [data-dir='BOTTOM'] {
-  inset: 50% 0 0 0;
+  bottom: 3%;
+  left: 50%;
+  translate: -50% 0;
 }
 
 /* Reduced motion preference */

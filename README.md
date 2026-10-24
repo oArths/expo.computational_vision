@@ -35,9 +35,9 @@ concluído.
 
 - **Mover:** aponte a ponta do indicador para o lado da câmera que corresponde à
   direção (direita, esquerda, cima ou baixo) e mantenha por um instante. O centro
-  é área morta, a metade ativa fica destacada e um anel na ponta do dedo mostra a
-  contagem. Cada gesto vale um movimento, e o jogador desliza até bater numa
-  parede.
+  é área morta, o quadrado da direção mostra onde manter o dedo e um anel na
+  ponta do dedo mostra a contagem. Cada gesto vale um movimento, e o jogador
+  desliza até bater numa parede.
 - **Pausar/despausar:** levante as duas mãos, próximas e acima do centro, por 1 s.
 - **Borda azul:** a mão está sendo rastreada.
 - O cronômetro pausa junto e não conta no tempo total.
