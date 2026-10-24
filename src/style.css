@@ -115,12 +115,8 @@
 
 .link-button {
   border: none;
-  background: none;
-  color: var(--color-ui-muted);
   font-family: inherit;
-  font-size: 12px;
   font-weight: 600;
-  text-decoration: underline;
   cursor: pointer;
   transition: color 0.2s ease;
 }
