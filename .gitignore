@@ -5,3 +5,4 @@ dist/
 public/wasm/
 banner-fatec-expo*
 .env
+.serena/
