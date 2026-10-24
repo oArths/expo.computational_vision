@@ -7,6 +7,7 @@
 - O entrypoint é `index.html` → `src/main.jsx` → `src/App.jsx`; `src/style.css` é importado em `src/main.jsx`. GSAP vem do npm, sem CDN.
 - As três telas (`#screen-home`, `#screen-ranking`, `#screen-game`) ficam sempre montadas e são alternadas por `tela` em `src/App.jsx` (classe `.active`), para a câmera não reiniciar; modais ficam fora delas.
 - `src/App.jsx` liga câmera, MediaPipe, gestos, UI e ranking. `src/game.js` cuida de nível, movimentos, tempo e score. O motor e a câmera são criados uma vez em `useEffect` sobre refs, não em estado.
+- Estado em zustand (`src/store.js`): `useUi` guarda tela/modais/resultado/câmera; `useCorrida` guarda a partida e é persistido no localStorage (`expo-golf-corrida`).
 - Tailwind cuida de layout e telas; `src/style.css` guarda tokens do tema (`@theme`), labirinto, animações e as zonas da câmera.
 - Confete com `canvas-confetti`, disparado em `aoPassarNivel` (uma vez por nível concluído, não no último).
 - Sem suíte de testes. Verificação: `npm run build` e abrir o app.
@@ -35,6 +36,7 @@
 - Tempo com `performance.now()`; pausa congela; `setInterval` não é usado para medir.
 - O relógio só liga no primeiro movimento (`iniciado` em `src/game.js`); antes disso `tempoMs()` retorna 0.
 - O HUD é atualizado por um `setInterval` de 250 ms em `src/game.js` (independente de movimento).
+- A partida é salva junto com o HUD e retomada no reload por `jogo.restaurar()`. O tempo fora da página conta no score (`Date.now() - salvoEm`), senão recarregar viraria pausa. Sair e terminar limpam a corrida salva.
 - `finalizar()` lê `tempoMs()` **antes** de `ativo = false`; inverter a ordem faz o tempo virar 1 s.
 - Score: `round(1_000_000 / (1 + movimentos × segundos / 20_000))`, enviado somente ao concluir o nível 15.
 - `movimentos` conta **gestos** (um por deslizamento): o contador fica dentro do `while` de `mover()`, mas só incrementa na primeira casa (`deslizou`). Não mover o incremento para fora sem tratar o `avancarNivel()`.

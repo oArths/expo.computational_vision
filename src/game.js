@@ -49,7 +49,12 @@ export function criarJogo({
       total: levels.length,
       dificuldade: nivel.difficulty,
       movimentos,
-      segundos: Math.floor(tempoMs() / 1000)
+      segundos: Math.floor(tempoMs() / 1000),
+      indice,
+      row: jogador.row,
+      col: jogador.col,
+      decorridoMs: tempoMs(),
+      iniciado
     })
   }
 
@@ -64,14 +69,38 @@ export function criarJogo({
     container.style.setProperty('--maze-cell-size', `${celula}px`)
   }
 
-  function carregarNivel() {
-    nivel = levels[indice]
-    jogador = { ...nivel.start }
+  function desenharNivel() {
     ajustarTamanho()
     renderizarLabirinto(table, nivel)
     trail.replaceChildren()
     posicionarToken(token, centro())
     hud()
+  }
+
+  function carregarNivel() {
+    nivel = levels[indice]
+    jogador = { ...nivel.start }
+    desenharNivel()
+  }
+
+  // Retoma a partida salva. O tempo fora da página conta no score, senão
+  // recarregar viraria um jeito de "pausar" o relógio.
+  function restaurar({ nivel: indiceSalvo, row, col, movimentos: movimentosSalvos, decorridoMs, salvoEm }) {
+    indice = Number.isInteger(indiceSalvo) && levels[indiceSalvo] ? indiceSalvo : 0
+    nivel = levels[indice]
+    jogador = nivel.grid[row]?.[col] === 'path' ? { row, col } : { ...nivel.start }
+    movimentos = Number.isFinite(movimentosSalvos) && movimentosSalvos > 0 ? movimentosSalvos : 0
+
+    acumulado =
+      (Number.isFinite(decorridoMs) && decorridoMs > 0 ? decorridoMs : 0) +
+      (Number.isFinite(salvoEm) ? Math.max(0, Date.now() - salvoEm) : 0)
+
+    iniciado = true
+    pausado = false
+    ativo = true
+    retomadoEm = performance.now()
+
+    desenharNivel()
   }
 
   function finalizar() {
@@ -174,6 +203,7 @@ export function criarJogo({
   return {
     mover,
     reiniciar,
+    restaurar,
     pausar,
     retomar,
     reposicionar,

@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import confetti from 'canvas-confetti'
-import levels from './levels.json'
 import { criarJogo } from './game.js'
 import {
   atualizarGesto,
@@ -21,6 +20,7 @@ import {
   nicknameEmUso,
   supabaseConfigurado
 } from './ranking.js'
+import { corridaVazia, useCorrida, useUi } from './store.js'
 import CameraPanel from './components/CameraPanel.jsx'
 import Maze from './components/Maze.jsx'
 import RankingScreen from './components/RankingScreen.jsx'
@@ -37,25 +37,19 @@ const TECLAS = {
 const DEBUG_GESTO = new URLSearchParams(location.search).has('debug')
 
 export default function App() {
-  const [tela, setTela] = useState('home')
-  const [hud, setHud] = useState({
-    nivel: 1,
-    total: levels.length,
-    dificuldade: levels[0].difficulty,
-    movimentos: 0,
-    segundos: 0
-  })
-  const [ranking, setRanking] = useState({ linhas: [], status: '' })
-  const [nickname, setNickname] = useState('')
-  const [erroInicio, setErroInicio] = useState('')
-  const [conferindoNome, setConferindoNome] = useState(false)
-  const [startAberto, setStartAberto] = useState(false)
-  const [pausado, setPausado] = useState(false)
-  const [resultado, setResultado] = useState(null)
-  const [statusCamera, setStatusCamera] = useState('Iniciando câmera...')
-  const [zona, setZona] = useState(null)
-  const [rastreado, setRastreado] = useState(false)
-  const [segurando, setSegurando] = useState(false)
+  const tela = useUi(state => state.tela)
+  const hud = useUi(state => state.hud)
+  const ranking = useUi(state => state.ranking)
+  const erroInicio = useUi(state => state.erroInicio)
+  const conferindoNome = useUi(state => state.conferindoNome)
+  const startAberto = useUi(state => state.startAberto)
+  const pausado = useUi(state => state.pausado)
+  const resultado = useUi(state => state.resultado)
+  const statusCamera = useUi(state => state.statusCamera)
+  const zona = useUi(state => state.zona)
+  const rastreado = useUi(state => state.rastreado)
+  const segurando = useUi(state => state.segurando)
+  const nickname = useCorrida(state => state.nickname)
 
   const containerRef = useRef(null)
   const tableRef = useRef(null)
@@ -82,14 +76,17 @@ export default function App() {
   const irParaHome = useCallback(() => {
     clearTimeout(reinicioRef.current)
     rodandoRef.current = false
-    setTela('home')
-    setStartAberto(false)
-    setPausado(false)
-    setSegurando(false)
     segurandoRef.current = false
-    setResultado(null)
-    setNickname('')
-    nicknameRef.current = ''
+    // Sair descarta a partida; só o reload mantém o que está salvo.
+    jogoRef.current?.pausar()
+    useCorrida.setState(corridaVazia)
+    useUi.setState({
+      tela: 'home',
+      startAberto: false,
+      pausado: false,
+      resultado: null,
+      segurando: false
+    })
   }, [])
 
   const agendarVolta = useCallback(() => {
@@ -109,8 +106,9 @@ export default function App() {
         const { top, posicao } = await buscarRanking({ score, segundos })
 
         nicknameRef.current = nome
-        setNickname(nome)
-        setResultado(atual => ({ ...atual, posicao: `${posicao}º`, status: '', top, renomear: false }))
+        useUi.setState(state => ({
+          resultado: { ...state.resultado, posicao: `${posicao}º`, status: '', top, renomear: false }
+        }))
         agendarVolta()
       } catch (erro) {
         console.error(erro)
@@ -119,19 +117,23 @@ export default function App() {
         // durante a partida, depois da checagem inicial.
         if (erro?.code === '23505') {
           clearTimeout(reinicioRef.current)
-          setResultado(atual => ({
-            ...atual,
-            posicao: '-',
-            status: 'Esse nome já foi usado. Escolha outro para salvar o score.',
-            renomear: true
+          useUi.setState(state => ({
+            resultado: {
+              ...state.resultado,
+              posicao: '-',
+              status: 'Esse nome já foi usado. Escolha outro para salvar o score.',
+              renomear: true
+            }
           }))
           return
         }
 
-        setResultado(atual => ({
-          ...atual,
-          posicao: '-',
-          status: 'Não foi possível enviar para o ranking. O resultado local acima é válido.'
+        useUi.setState(state => ({
+          resultado: {
+            ...state.resultado,
+            posicao: '-',
+            status: 'Não foi possível enviar para o ranking. O resultado local acima é válido.'
+          }
         }))
       }
     },
@@ -144,16 +146,20 @@ export default function App() {
       const score = calcularScore(movimentos, segundos)
       resultadoRef.current = { score, segundos }
 
-      setResultado({
-        movimentos,
-        segundos,
-        score,
-        posicao: supabaseConfigurado ? '...' : '-',
-        status: supabaseConfigurado
-          ? 'Enviando resultado...'
-          : 'Ranking desativado (sem configuração).',
-        top: [],
-        renomear: false
+      // A partida acabou: nada para retomar no próximo reload.
+      useCorrida.setState(corridaVazia)
+      useUi.setState({
+        resultado: {
+          movimentos,
+          segundos,
+          score,
+          posicao: supabaseConfigurado ? '...' : '-',
+          status: supabaseConfigurado
+            ? 'Enviando resultado...'
+            : 'Ranking desativado (sem configuração).',
+          top: [],
+          renomear: false
+        }
       })
       agendarVolta()
 
@@ -164,7 +170,7 @@ export default function App() {
 
   const salvarNovoNome = useCallback(
     async nome => {
-      setResultado(atual => (atual ? { ...atual, status: 'Enviando...' } : atual))
+      useUi.setState(state => (state.resultado ? { resultado: { ...state.resultado, status: 'Enviando...' } } : {}))
       await enviarScore(nome)
     },
     [enviarScore]
@@ -176,26 +182,58 @@ export default function App() {
 
     if (jogo.estaPausado()) {
       jogo.retomar()
-      setPausado(false)
+      useUi.setState({ pausado: false })
     } else {
       jogo.pausar()
-      setPausado(true)
+      useUi.setState({ pausado: true })
     }
   }, [])
 
   // Motor do jogo: criado uma vez, sobre as refs do React.
   useEffect(() => {
+    const salva = useCorrida.getState()
+
     const jogo = criarJogo({
       table: tableRef.current,
       container: containerRef.current,
       token: tokenRef.current,
       trail: trailRef.current,
-      aoAtualizarHud: setHud,
+      aoAtualizarHud(dados) {
+        useUi.setState({
+          hud: {
+            nivel: dados.nivel,
+            total: dados.total,
+            dificuldade: dados.dificuldade,
+            movimentos: dados.movimentos,
+            segundos: dados.segundos
+          }
+        })
+
+        if (!dados.iniciado || !rodandoRef.current) return
+
+        useCorrida.setState({
+          iniciado: true,
+          nivel: dados.indice,
+          row: dados.row,
+          col: dados.col,
+          movimentos: dados.movimentos,
+          decorridoMs: dados.decorridoMs,
+          salvoEm: Date.now()
+        })
+      },
       aoPassarNivel: () => confetti({ particleCount: 110, spread: 75, origin: { y: 0.6 } }),
       aoTerminar: finalizarDesafio
     })
 
     jogoRef.current = jogo
+
+    if (salva.iniciado) {
+      jogo.restaurar(salva)
+      nicknameRef.current = salva.nickname
+      rodandoRef.current = true
+      useUi.setState({ tela: 'jogo', startAberto: false })
+    }
+
     return () => jogo.destruir()
   }, [finalizarDesafio])
 
@@ -205,48 +243,59 @@ export default function App() {
     if (startAberto) jogoRef.current?.reiniciar()
   }, [startAberto])
 
+  // A tela do jogo fica escondida no primeiro render; ao retomar uma partida
+  // salva o token só pode ser medido depois que ela aparece.
+  useEffect(() => {
+    if (tela === 'jogo') jogoRef.current?.reposicionar()
+  }, [tela])
+
   const abrirJogo = useCallback(() => {
     clearTimeout(reinicioRef.current)
     rodandoRef.current = false
-    setResultado(null)
-    setPausado(false)
-    setNickname('')
-    nicknameRef.current = ''
-    setTela('jogo')
-    setStartAberto(true)
+    segurandoRef.current = false
+    useCorrida.setState(corridaVazia)
+    useUi.setState({
+      tela: 'jogo',
+      startAberto: true,
+      pausado: false,
+      resultado: null,
+      erroInicio: '',
+      conferindoNome: false,
+      segurando: false
+    })
   }, [])
 
   const iniciarDesafio = useCallback(async () => {
     const nome = nickname.trim()
 
     if (!nome) {
-      setErroInicio('')
+      useUi.setState({ erroInicio: '' })
       return
     }
 
-    setErroInicio('')
+    useUi.setState({ erroInicio: '' })
 
     if (supabaseConfigurado) {
-      setConferindoNome(true)
+      useUi.setState({ conferindoNome: true })
 
       try {
         if (await nicknameEmUso(nome)) {
-          setErroInicio('Esse nome já está no ranking. Escolha outro.')
+          useUi.setState({ erroInicio: 'Esse nome já está no ranking. Escolha outro.' })
           return
         }
       } catch (erro) {
         // Sem rede a checagem falha; o banco ainda barra o nome repetido no final.
         console.warn('Não foi possível checar o nome.', erro)
       } finally {
-        setConferindoNome(false)
+        useUi.setState({ conferindoNome: false })
       }
     }
 
     const nomeFinal = nome.slice(0, 20)
     nicknameRef.current = nomeFinal
-    setNickname(nomeFinal)
+    useCorrida.setState({ nickname: nomeFinal })
     clearTimeout(reinicioRef.current)
-    setStartAberto(false)
+    useUi.setState({ startAberto: false })
     rodandoRef.current = true
     Object.assign(gestoRef.current, criarGesto())
     pausaRef.current.desde = null
@@ -256,20 +305,22 @@ export default function App() {
   }, [nickname])
 
   const abrirRanking = useCallback(async () => {
-    setTela('ranking')
-    setRanking({
-      linhas: [],
-      status: supabaseConfigurado ? 'Carregando...' : 'Ranking desativado (sem configuração).'
+    useUi.setState({
+      tela: 'ranking',
+      ranking: {
+        linhas: [],
+        status: supabaseConfigurado ? 'Carregando...' : 'Ranking desativado (sem configuração).'
+      }
     })
 
     if (!supabaseConfigurado) return
 
     try {
       const linhas = await listarRanking()
-      setRanking({ linhas, status: linhas.length ? '' : 'Nenhum resultado ainda.' })
+      useUi.setState({ ranking: { linhas, status: linhas.length ? '' : 'Nenhum resultado ainda.' } })
     } catch (erro) {
       console.error(erro)
-      setRanking({ linhas: [], status: 'Não foi possível carregar o ranking.' })
+      useUi.setState({ ranking: { linhas: [], status: 'Não foi possível carregar o ranking.' } })
     }
   }, [])
 
@@ -292,7 +343,7 @@ export default function App() {
         if (!ativo) return
 
         statusRef.current = `Câmera ativa · ${delegado}`
-        setStatusCamera(statusRef.current)
+        useUi.setState({ statusCamera: statusRef.current })
 
         cancelarLoop = iniciarLoop({
           video,
@@ -313,7 +364,7 @@ export default function App() {
             const seguindo = agora - ultimoRastreadoRef.current < 400
             if (seguindo !== rastreadoRef.current) {
               rastreadoRef.current = seguindo
-              setRastreado(seguindo)
+              useUi.setState({ rastreado: seguindo })
             }
 
             const aspecto = video.videoWidth / video.videoHeight || 1
@@ -322,7 +373,7 @@ export default function App() {
 
             if (zonaAtiva !== zonaRef.current) {
               zonaRef.current = zonaAtiva
-              setZona(zonaAtiva)
+              useUi.setState({ zona: zonaAtiva })
             }
 
             if (rodandoRef.current) {
@@ -348,7 +399,7 @@ export default function App() {
             const segurandoAgora = rodandoRef.current && pausaRef.current.desde !== null
             if (segurandoAgora !== segurandoRef.current) {
               segurandoRef.current = segurandoAgora
-              setSegurando(segurandoAgora)
+              useUi.setState({ segurando: segurandoAgora })
             }
 
             if (pauseProgressRef.current) {
@@ -361,7 +412,7 @@ export default function App() {
             const texto = `Câmera ativa · ${Math.round(fps)} fps${maos} · ${delegado}`
             if (texto !== statusRef.current) {
               statusRef.current = texto
-              setStatusCamera(texto)
+              useUi.setState({ statusCamera: texto })
             }
 
             if (DEBUG_GESTO && debugRef.current) {
@@ -373,7 +424,9 @@ export default function App() {
         })
       } catch (erro) {
         console.error(erro)
-        setStatusCamera('Câmera indisponível: use HTTPS ou localhost e libere o acesso.')
+        useUi.setState({
+          statusCamera: 'Câmera indisponível: use HTTPS ou localhost e libere o acesso.'
+        })
       }
     }
 
@@ -510,8 +563,8 @@ export default function App() {
         aberto={startAberto}
         nickname={nickname}
         onNickname={valor => {
-          setNickname(valor)
-          setErroInicio('')
+          useCorrida.setState({ nickname: valor })
+          useUi.setState({ erroInicio: '' })
         }}
         erro={erroInicio}
         enviando={conferindoNome}
