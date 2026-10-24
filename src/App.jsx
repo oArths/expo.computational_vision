@@ -408,7 +408,7 @@ export default function App() {
   return (
     <>
       <div
-        className={`tracker-ring fixed inset-0 z-50 border-[3px] border-transparent transition-colors duration-300 ${
+        className={`tracker-ring pointer-events-none fixed inset-0 z-50 border-[3px] border-transparent transition-colors duration-300 ${
           rastreado ? 'border-primary-blue/60 shadow-[inset_0_0_18px_rgba(79,172,254,0.15)]' : ''
         }`}
         aria-hidden="true"
@@ -493,7 +493,7 @@ export default function App() {
       </div>
 
       <div
-        className={`fixed bottom-7 left-1/2 z-[55] flex -translate-x-1/2 flex-col items-center gap-2 rounded-[10px] bg-ui-fg/85 px-4 py-3 text-xs text-white transition-opacity duration-150 ${
+        className={`pointer-events-none fixed bottom-7 left-1/2 z-[55] flex -translate-x-1/2 flex-col items-center gap-2 rounded-[10px] bg-ui-fg/85 px-4 py-3 text-xs text-white transition-opacity duration-150 ${
           segurando ? 'visible opacity-100' : 'invisible opacity-0'
         }`}
       >
