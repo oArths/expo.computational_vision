@@ -167,7 +167,7 @@ export function criarJogo({
   carregarNivel()
 
   // Mantém o cronômetro andando na tela sem depender de um movimento.
-  setInterval(() => {
+  const intervalo = setInterval(() => {
     if (ativo && !pausado) hud()
   }, 250)
 
@@ -178,6 +178,7 @@ export function criarJogo({
     retomar,
     reposicionar,
     estaPausado: () => pausado,
-    nivelAtual: () => nivel
+    nivelAtual: () => nivel,
+    destruir: () => clearInterval(intervalo)
   }
 }

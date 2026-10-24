@@ -1,3 +1,5 @@
+import gsap from 'gsap'
+
 const CANTOS = ['corner-tl', 'corner-tr', 'corner-bl', 'corner-br']
 
 export function renderizarLabirinto(table, nivel) {

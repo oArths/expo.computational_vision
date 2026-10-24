@@ -4,3 +4,4 @@ dist/
 .env.local
 public/wasm/
 banner-fatec-expo*
+.env

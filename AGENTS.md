@@ -2,11 +2,12 @@
 
 ## Estrutura e execução
 
-- Projeto Vite + JavaScript puro (sem framework). `npm run dev` sobe o app; `npm run build` gera `dist/`.
+- Projeto Vite + React (JSX) + Tailwind v4. `npm run dev` sobe o app; `npm run build` gera `dist/`.
 - `npm run dev` e `npm run build` copiam o wasm do MediaPipe de `node_modules` para `public/wasm` via `tools/copy-wasm.mjs`.
-- O entrypoint é `index.html`, que carrega o GSAP por CDN e `src/main.js` como módulo. O CSS é importado por `src/main.js`.
-- As três telas (`#screen-home`, `#screen-ranking`, `#screen-game`) são seções fixas alternadas por `.active` em `src/main.js`; modais ficam fora delas.
-- `src/main.js` liga câmera, MediaPipe, gestos, UI e ranking. `src/game.js` cuida de nível, movimentos, tempo e score.
+- O entrypoint é `index.html` → `src/main.jsx` → `src/App.jsx`; `src/style.css` é importado em `src/main.jsx`. GSAP vem do npm, sem CDN.
+- As três telas (`#screen-home`, `#screen-ranking`, `#screen-game`) ficam sempre montadas e são alternadas por `tela` em `src/App.jsx` (classe `.active`), para a câmera não reiniciar; modais ficam fora delas.
+- `src/App.jsx` liga câmera, MediaPipe, gestos, UI e ranking. `src/game.js` cuida de nível, movimentos, tempo e score. O motor e a câmera são criados uma vez em `useEffect` sobre refs, não em estado.
+- Tailwind cuida de layout e telas; `src/style.css` guarda tokens do tema (`@theme`), labirinto, animações e as zonas da câmera.
 - Confete com `canvas-confetti`, disparado em `aoPassarNivel` (uma vez por nível concluído, não no último).
 - Sem suíte de testes. Verificação: `npm run build` e abrir o app.
 - `src/levels.json` é gerado por `npm run levels`; não editar à mão.
