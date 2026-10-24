@@ -6,3 +6,5 @@ public/wasm/
 banner-fatec-expo*
 .env
 .serena/
+supabase/*
+supabase/

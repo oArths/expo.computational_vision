@@ -44,7 +44,6 @@
 ## Supabase
 
 - Cliente em `src/ranking.js` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` (`.env.local`, ignorado pelo git). O `.env.example` foi removido; crie o `.env.local` à mão.
-- O SQL da tabela, das policies e do índice está em `supabase/schema.sql`; rode no SQL Editor do projeto.
 - Nunca usar `service_role` no frontend.
 - A tabela `Users` exige RLS com policies de `select` e `insert` para `anon`, e um índice único em `lower(nickname)` — sem ele o nome repetido só é barrado no cliente, que perde a corrida entre dois jogadores.
 - `nicknameEmUso` (checagem antes de começar) usa `ilike`; o erro `23505` no envio abre o campo de renomear no modal final.
