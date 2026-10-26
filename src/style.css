@@ -378,12 +378,12 @@ td.wall.corner-br { border-bottom-right-radius: 10px; }
   aspect-ratio: 1;
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 8px;
-  background: transparent;
+  background: rgba(79, 172, 254, 0.32);
   transition: background 0.12s ease, border-color 0.12s ease;
 }
 
 .camera-zonas span.ativa {
-  background: rgba(79, 172, 254, 0.32);
+  background: rgba(79, 172, 254, 0.62);
   border-color: rgba(79, 172, 254, 0.9);
 }
 
